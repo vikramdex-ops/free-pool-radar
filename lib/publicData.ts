@@ -115,9 +115,16 @@ export function envelope(
     },
     {
       headers: {
-        // Public, cacheable, and allowed to be cached briefly: the underlying
-        // data only changes every five hours (§77).
-        "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+        // Public and briefly cacheable: the underlying data only changes every
+        // five hours (§77), so a short cache costs nothing and keeps the origin
+        // cheap.
+        //
+        // `stale-while-revalidate` is deliberately short. A long SWR window
+        // compounds with the ISR revalidation interval, so a change could take
+        // ten minutes to appear even though the collector writes it
+        // immediately — which would make the site look like it had missed an
+        // update it had actually recorded.
+        "Cache-Control": "public, s-maxage=300, stale-while-revalidate=60",
       },
     },
   );
