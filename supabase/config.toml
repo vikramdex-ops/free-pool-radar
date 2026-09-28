@@ -1,0 +1,5 @@
+# The cron job calls this with pg_net, which cannot present a Supabase API key.
+# `verify_jwt = false` disables the platform-level user check; the handler's own
+# shared-secret header is the actual gate, and the handler runs as `auth: 'secret'`.
+[functions.radar-sweep]
+verify_jwt = false

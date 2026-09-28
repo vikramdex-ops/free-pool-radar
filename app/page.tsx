@@ -1,0 +1,239 @@
+/**
+ * Landing page.
+ *
+ * Every figure here is counted from the database on each request, never
+ * hard-coded (Â§18). The page revalidates on an interval so a data change
+ * reaches visitors without a deployment (Â§76), while the data itself is
+ * written by the monitoring pipeline, not by this file.
+ */
+
+import type { Metadata } from "next";
+import Link from "next/link";
+import { ChangeFeed, EndedArchive, SourceHealthPanel } from "@/components/Feed";
+import { Hero, Upcoming } from "@/components/Hero";
+import { OfferLedger } from "@/components/Ledger";
+import { Registry } from "@/components/Registry";
+import { Methodology } from "@/components/Methodology";
+import {
+  getChanges,
+  getEndedOffers,
+  getEvents,
+  getLiveOffers,
+  getProviders,
+  getStatus,
+  isConfigured,
+} from "@/lib/db";
+
+export const revalidate = 300;
+
+export const metadata: Metadata = {
+  title: "Free Pool Radar â€” every free AI inference pool, tracked live",
+  description:
+    "Every provider giving away AI inference at $0 â€” shared token pools, free model endpoints, sponsored access and keyless routes â€” with exact quotas, card requirements, verification times and the history of what has been withdrawn.",
+  alternates: { canonical: "/" },
+};
+
+export default async function Page() {
+  const now = Date.now();
+
+  const [status, offers, events, changes, ended, providers] = await Promise.all([
+    getStatus(),
+    getLiveOffers(),
+    getEvents(),
+    getChanges(80),
+    getEndedOffers(),
+    getProviders(),
+  ]);
+
+  // The hero's four figures are counted, not declared.
+  const modelIds = new Set(
+    offers.map((o) => o.model_id_text).filter((m): m is string => Boolean(m)),
+  ).size;
+  const cardlessProviders = new Set(
+    offers
+      .filter((o) => !o.card_required && o.status === "live")
+      .map((o) => o.provider?.slug)
+      .filter((s): s is string => Boolean(s)),
+  ).size;
+
+  const sourcesOk = status?.sources_ok ?? 0;
+  const sourcesTotal = status?.sources_total ?? 0;
+
+  return (
+    <>
+      <main id="main">
+        <Hero
+          offers={offers}
+          events={events}
+          changes={changes}
+          now={now}
+          stats={{
+            modelIds,
+            cardlessProviders,
+            sourcesLive: sourcesOk,
+            sourcesTotal,
+            withdrawn: ended.length,
+          }}
+        />
+
+        <div className="wrap">
+          <div style={{ paddingTop: "2rem" }}>
+            <SourceHealthPanel
+              sourcesOk={sourcesOk}
+              sourcesTotal={sourcesTotal}
+              lastSweep={status?.last_sweep_at ?? null}
+              nextSweep={status?.next_sweep_at ?? null}
+              unhealthy={status?.sources_unhealthy ?? 0}
+            />
+          </div>
+
+          {!isConfigured() ? (
+            <div className="empty" style={{ marginTop: "2.5rem" }}>
+              <p className="empty-title">Database not configured</p>
+              <p>
+                Set <code>NEXT_PUBLIC_SUPABASE_URL</code> and{" "}
+                <code>NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY</code> to read the
+                live dataset. Nothing is shown here rather than displaying
+                sample figures that could be mistaken for live ones.
+              </p>
+            </div>
+          ) : null}
+
+          <section id="soon" className="sect">
+            <div className="sect-head">
+              <h2 className="sect-title">Starting soon</h2>
+              <p className="sect-note">
+                Announced pools and events, in the order they open. Sorted
+                chronologically, never by size.
+              </p>
+            </div>
+            <Upcoming events={events} offers={offers} now={now} />
+          </section>
+
+          <section id="live" className="sect">
+            <div className="sect-head">
+              <h2 className="sect-title">Live now</h2>
+              <div className="inline-flex" style={{ gap: "0.5rem" }}>
+                <Link href="/live" className="btn">
+                  All {offers.length} routes
+                </Link>
+                <Link href="/providers" className="btn">
+                  Providers
+                </Link>
+                <Link href="/compare" className="btn">
+                  Compare
+                </Link>
+              </div>
+            </div>
+            {/* Capped here so the landing page stays readable; /live holds the
+                complete set with filters. */}
+            <OfferLedger offers={offers} now={now} limit={40} />
+          </section>
+
+          <ChangeFeed
+            id="new"
+            title="New"
+            changes={changes}
+            now={now}
+            kinds={["new"]}
+            emptyTitle="Nothing new this cycle"
+            emptyBody="The last sweep found no offers that were not already on record. New discoveries appear here the moment a monitored source publishes one."
+          />
+
+          <ChangeFeed
+            id="changed"
+            title="Changed"
+            changes={changes}
+            now={now}
+            kinds={[
+              "model_added",
+              "model_removed",
+              "quota_increased",
+              "quota_decreased",
+              "card_required",
+              "card_removed",
+              "subscription_required",
+              "subscription_removed",
+              "rate_limit_changed",
+              "price_changed",
+              "status_changed",
+              "pool_started",
+              "pool_exhausted",
+              "pool_extended",
+              "pool_cancelled",
+            ]}
+            emptyTitle="No tracked changes"
+            emptyBody="Nothing we track has changed since the last sweep. A quota move, a new card requirement or a rate-limit change appears here with both values."
+          />
+
+          <EndedArchive offers={ended} now={now} />
+
+          <section id="registry" className="sect">
+            <div className="sect-head">
+              <h2 className="sect-title">Provider index</h2>
+              <Link href="/providers" className="link-ev">
+                All providers
+                <span aria-hidden="true"> â†’</span>
+              </Link>
+            </div>
+            <Registry providers={providers} />
+          </section>
+
+          <Methodology />
+        </div>
+      </main>
+
+      <SiteFooter />
+    </>
+  );
+}
+
+function SiteFooter() {
+  return (
+    <footer className="foot">
+      <div className="wrap">
+        <div className="foot-grid">
+          <div>
+            <p className="foot-brand">FREE POOL RADAR</p>
+            <p className="annot" style={{ maxWidth: "34ch" }}>
+              The live intelligence layer for $0 AI inference.
+            </p>
+          </div>
+          <div>
+            <p className="label">Product</p>
+            <ul className="foot-links">
+              <li><Link href="/timeline">Timeline</Link></li>
+              <li><Link href="/providers">Providers</Link></li>
+              <li><Link href="/models">Models</Link></li>
+              <li><Link href="/compare">Compare</Link></li>
+              <li><Link href="/methodology">Methodology</Link></li>
+            </ul>
+          </div>
+          <div>
+            <p className="label">API</p>
+            <ul className="foot-links">
+              <li><Link href="/api/offers">/api/offers</Link></li>
+              <li><Link href="/api/providers">/api/providers</Link></li>
+              <li><Link href="/api/models">/api/models</Link></li>
+              <li><Link href="/api/changes">/api/changes</Link></li>
+              <li><Link href="/api/live">/api/live</Link></li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="hairline" style={{ marginTop: "2.5rem", paddingTop: "1.5rem" }}>
+          <p className="annot">
+            Free access can be withdrawn, rate-limited, modified or exhausted
+            without notice. Always review the provider&rsquo;s current terms,
+            privacy policy and usage restrictions before sending sensitive or
+            production data.
+          </p>
+          <p className="annot" style={{ marginTop: "0.75rem" }}>
+            Free Pool Radar is an independent information service and is not
+            affiliated with the providers listed. All timestamps are UTC.
+          </p>
+        </div>
+      </div>
+    </footer>
+  );
+}

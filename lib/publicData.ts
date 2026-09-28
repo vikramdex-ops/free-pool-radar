@@ -1,0 +1,181 @@
+import { NextResponse } from "next/server";
+import {
+  getEndedOffers,
+  getEvents,
+  getLiveOffers,
+  getStatus,
+  getUpcomingOffers,
+  isConfigured,
+  type OfferWithProvider,
+} from "@/lib/db";
+import { iso, stampUTC } from "@/lib/format";
+
+/**
+ * Public API shape (§37).
+ *
+ * Every response is built from the same stored rows the website renders, so an
+ * API consumer and a page reader can never see different numbers. Timestamps
+ * are ISO 8601; the editorial forms stay on the site (§74).
+ *
+ * `publicData` is deliberately read-only and uses the publishable key, so these
+ * routes need no authentication and expose nothing the site does not already
+ * show.
+ */
+
+export const revalidate = 300;
+
+/** The documented per-offer shape, with evidence attached. */
+export function serialiseOffer(o: OfferWithProvider) {
+  return {
+    id: o.id,
+    provider: o.provider?.name ?? null,
+    providerSlug: o.provider?.slug ?? null,
+    providerUrl: o.provider?.official_url ?? null,
+    model: o.model_label,
+    modelId: o.model_id_text,
+    status: o.status,
+    offerType: o.offer_type,
+
+    cardRequired: o.card_required,
+    paymentRequired: o.payment_required,
+    subscriptionRequired: o.access_requires_subscription,
+    apiKeyRequired: o.api_key_required,
+    keyless: o.keyless,
+
+    compatibility: {
+      openai: o.compatibility_openai,
+      anthropic: o.compatibility_anthropic,
+      other: o.compatibility_other,
+    },
+
+    limits: {
+      rpm: o.rpm,
+      rpd: o.rpd,
+      tpm: o.tpm,
+      tpd: o.tpd,
+      monthlyLimit: o.monthly_limit,
+      monthlyUnit: o.monthly_unit,
+      tokenLimit: o.token_limit,
+      tokenLimitUnit: o.token_limit_unit,
+    },
+
+    pool: o.pool_size === null && o.pool_remaining === null ? null : {
+      size: o.pool_size,
+      remaining: o.pool_remaining,
+      unit: o.pool_unit,
+    },
+
+    credit:
+      o.credit_amount === null
+        ? null
+        : { amount: o.credit_amount, currency: o.credit_currency },
+
+    startAt: iso(o.start_at),
+    endAt: iso(o.end_at),
+    exhaustionCondition: o.exhaustion_condition,
+
+    commercialUse: o.commercial_use,
+    dataPolicy: o.data_policy,
+    retentionPolicy: o.retention_policy,
+
+    verificationLevel: o.verification_level,
+    officialEvidenceUrl: o.official_evidence_url,
+    secondaryEvidenceUrl: o.secondary_evidence_url,
+
+    firstDiscoveredAt: iso(o.first_discovered_at),
+    firstVerifiedAt: iso(o.first_verified_at),
+    lastVerifiedAt: iso(o.last_verified_at),
+    lastVerifiedDisplay: stampUTC(o.last_verified_at),
+    endedAt: iso(o.ended_at),
+
+    provenance: o.is_seed_data ? "researched" : "observed",
+  };
+}
+
+/** Standard envelope: the data, plus when it was produced and from where. */
+export function envelope(
+  data: unknown,
+  extra: Record<string, unknown> = {},
+): NextResponse {
+  if (!isConfigured()) {
+    return NextResponse.json(
+      {
+        error: "not_configured",
+        message:
+          "The database is not configured on this deployment. See .env.example.",
+      },
+      { status: 503 },
+    );
+  }
+  return NextResponse.json(
+    {
+      data,
+      generatedAt: new Date().toISOString(),
+      ...extra,
+    },
+    {
+      headers: {
+        // Public, cacheable, and allowed to be cached briefly: the underlying
+        // data only changes every five hours (§77).
+        "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+      },
+    },
+  );
+}
+
+const statusMeta = async () => {
+  const s = await getStatus();
+  return s
+    ? {
+        sources: { total: s.sources_total, ok: s.sources_ok, impaired: s.sources_unhealthy },
+        lastSweepAt: iso(s.last_sweep_at),
+        nextSweepAt: iso(s.next_sweep_at),
+      }
+    : {};
+};
+
+/* ------------------------------------------------------------------ */
+/* shared query builders                                               */
+/* ------------------------------------------------------------------ */
+
+export async function livePayload() {
+  const offers = await getLiveOffers();
+  return envelope(offers.map(serialiseOffer), {
+    count: offers.length,
+    ...(await statusMeta()),
+  });
+}
+
+export async function upcomingPayload() {
+  const offers = await getUpcomingOffers();
+  const events = await getEvents();
+  return envelope(
+    {
+      offers: offers.map(serialiseOffer),
+      events: events.map((e) => ({
+        id: e.id,
+        slug: e.slug,
+        name: e.name,
+        provider: e.provider?.name ?? null,
+        providerSlug: e.provider?.slug ?? null,
+        status: e.status,
+        startAt: iso(e.start_at),
+        endAt: iso(e.end_at),
+        poolSize: e.pool_size,
+        poolRemaining: e.pool_remaining,
+        unit: e.unit,
+        models: e.models,
+        requirements: e.requirements,
+        exhaustionCondition: e.exhaustion_condition,
+        officialUrl: e.official_url,
+        lastVerifiedAt: iso(e.last_verified_at),
+      })),
+    },
+    { ...(await statusMeta()) },
+  );
+}
+
+export async function endedPayload() {
+  const offers = await getEndedOffers();
+  return envelope(offers.map(serialiseOffer), { count: offers.length });
+}
