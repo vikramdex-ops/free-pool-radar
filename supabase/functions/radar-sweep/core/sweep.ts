@@ -226,36 +226,48 @@ export async function runSweep(db: Db): Promise<SweepReport> {
     // One round trip for the whole provider (§11: collect → normalise →
     // verify → detect changes → store). Change detection happens in SQL because
     // only the database holds both the previous and the current value.
-    const recon = await db.query<{
+    const payload = {
+      provider_slug: collector.providerSlug,
+      free_model_count: result.freeModelCount,
+      offers: result.offers.map((o) => toRow(o, url, sourceType)),
+      events: result.events.map((e) => ({
+        // The collector owns the slug. Falling back to a name-derived one
+        // would let the same pool be stored twice under two identities.
+        slug: e.slug || eventSlug(e.providerSlug, e.name),
+        name: e.name,
+        description: e.description,
+        status: e.status,
+        start_at: e.startAt,
+        end_at: e.endAt,
+        pool_size: e.poolSize,
+        pool_remaining: e.poolRemaining,
+        unit: e.unit,
+        models: e.models,
+        eligibility: e.eligibility,
+        requirements: e.requirements,
+        exhaustion_condition: e.exhaustionCondition,
+        official_url: e.officialUrl,
+      })),
+    };
+
+    let recon: {
       offers_created: number;
       offers_updated: number;
       offers_unchanged: number;
       models_created: number;
-    }>("rpc_reconcile_sweep", [
-      {
-        provider_slug: collector.providerSlug,
-        free_model_count: result.freeModelCount,
-        offers: result.offers.map((o) => toRow(o, url, sourceType)),
-        events: result.events.map((e) => ({
-          // The collector owns the slug. Falling back to a name-derived one
-          // would let the same pool be stored twice under two identities.
-          slug: e.slug || eventSlug(e.providerSlug, e.name),
-          name: e.name,
-          description: e.description,
-          status: e.status,
-          start_at: e.startAt,
-          end_at: e.endAt,
-          pool_size: e.poolSize,
-          pool_remaining: e.poolRemaining,
-          unit: e.unit,
-          models: e.models,
-          eligibility: e.eligibility,
-          requirements: e.requirements,
-          exhaustion_condition: e.exhaustionCondition,
-          official_url: e.officialUrl,
-        })),
-      },
-    ]);
+    }[];
+    try {
+      recon = await db.query("rpc_reconcile_sweep", [payload]);
+    } catch (e) {
+      // Name the collector in the failure. A database error inside a
+      // set-based reconcile identifies the provider but not the row, and
+      // "some provider failed" is not something anyone can act on.
+      const msg = e instanceof Error ? e.message : String(e);
+      throw new Error(
+        `reconcile failed for ${collector.key} ` +
+          `(${payload.offers.length} offers, ${payload.events.length} events): ${msg}`,
+      );
+    }
 
     const r = firstRow(recon, `rpc_reconcile_sweep(${collector.key})`);
     counts.created += r.offers_created ?? 0;

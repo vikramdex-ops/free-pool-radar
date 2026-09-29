@@ -27,7 +27,14 @@ export default {
     const db = {
       async query<T = unknown>(fn: string, p: unknown[] = []): Promise<T[]> {
         const { data, error } = await ctx.supabaseAdmin.rpc(fn, { p })
-        if (error) throw new Error(`${fn}: ${error.message}`)
+        if (error) {
+          // Include `details`, not just `message`. Postgres puts the failing
+          // statement and the plpgsql line number in details, and without it a
+          // function-level error arrives as a bare "operator does not exist"
+          // with no way to tell which of several statements it came from.
+          const where = error.details ? ` -- ${error.details}` : ""
+          throw new Error(`${fn}: ${error.message}${where}`)
+        }
         return (data ?? []) as T[]
       },
     }

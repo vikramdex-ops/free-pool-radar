@@ -35,6 +35,18 @@ async function waitFor(label, predicate, timeoutMs = 420000) {
 const FIXTURE = "zz-acceptance-fixture";
 
 async function main() {
+  // Tests 1–3 exercise the create and change paths, which need the synthetic
+  // fixture to exist. Seed it first:
+  //   npx supabase db query --linked --file scripts/acceptance-fixture.sql
+  // and remove it afterwards with acceptance-cleanup.sql.
+  const seeded = await get("/api/live");
+  if (!seeded.data.some((o) => o.providerSlug === FIXTURE)) {
+    console.log(
+      "SKIP  Tests 1-3 need the acceptance fixture.\n" +
+        "      Seed it: npx supabase db query --linked --file scripts/acceptance-fixture.sql",
+    );
+  }
+
   // Test 1 — a database change reaches the site with no deploy.
   const t1 = await waitFor("db-change", async () => {
     const live = await get("/api/live");
@@ -56,14 +68,30 @@ async function main() {
   );
 
   // Test 3 — a quota change produced a CHANGE event.
-  const changes = await get("/api/changes?limit=200");
+  //
+  // Polled rather than read once: /api/changes is its own ISR entry with its own
+  // regeneration timer, so it can lag /api/live by up to one interval. A single
+  // read would report a failure that is really just a cache boundary.
+  const t3 = await waitFor("change-event", async () => {
+    const c = await get("/api/changes?limit=300");
+    return c.data.some(
+      (x) =>
+        x.providerSlug === FIXTURE &&
+        x.changeType === "quota_decreased" &&
+        x.oldValue === "250" &&
+        x.newValue === "100",
+    );
+  });
+  const changes = await get("/api/changes?limit=300");
   const quotaChange = changes.data.find(
     (c) => c.providerSlug === FIXTURE && c.changeType === "quota_decreased",
   );
   check(
     "Test 3: quota change produced a CHANGE event",
     Boolean(quotaChange) && quotaChange.oldValue === "250" && quotaChange.newValue === "100",
-    quotaChange ? `${quotaChange.oldValue} -> ${quotaChange.newValue}` : "no event",
+    quotaChange
+      ? `${quotaChange.oldValue} -> ${quotaChange.newValue} (after ${Math.round(t3.ms / 1000)}s)`
+      : "no event",
   );
 
   // Test 4 — a source failure must NOT mark offers ended.

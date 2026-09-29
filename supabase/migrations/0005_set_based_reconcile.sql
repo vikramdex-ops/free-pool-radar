@@ -10,12 +10,43 @@
 -- available. The collector cannot compute a diff because it has never seen the
 -- prior state — only the database has both values.
 
--- Compares a previous offer row against a freshly collected one and returns the
--- changes as a jsonb array. Only fields that actually moved are emitted (§15).
+-- One detected difference, as a typed row.
+--
+-- A composite type rather than a jsonb object because the caller consumes it
+-- from plpgsql. Field access on a typed record needs no operator resolution,
+-- whereas `->>` on a jsonb loop variable does not always resolve inside plpgsql
+-- and fails at runtime with "operator does not exist: text ->> unknown".
+--
+-- create type is not idempotent, so the guard keeps a re-apply of this
+-- migration a no-op.
+do $$
+begin
+  if not exists (
+    select 1 from pg_type t join pg_namespace n on n.oid = t.typnamespace
+     where n.nspname = 'public' and t.typname = 'offer_change'
+  ) then
+    create type public.offer_change as (
+      change_type text,
+      field       text,
+      old_value   text,
+      new_value   text,
+      severity    text
+    );
+  end if;
+end $$;
+
+-- The return type of an existing function cannot be changed in place, so the
+-- jsonb version is dropped before the typed one is defined. On a fresh database
+-- this drop is a no-op.
+drop function if exists public.rpc_offer_changes(jsonb, jsonb);
+
+-- Compares a previous offer row against a freshly collected one and returns one
+-- row per field that actually moved (§15). Returning no rows is what makes a
+-- repeated sweep a complete no-op.
 create or replace function public.rpc_offer_changes(
   prev jsonb,
   next jsonb
-) returns jsonb
+) returns setof public.offer_change
 language sql immutable
 as $$
   with watched (field, kind, severity) as (
@@ -32,37 +63,30 @@ as $$
       ('pool_size',                    'pool',     'info'),
       ('token_limit',                  'pool',     'info')
   )
-  select coalesce(
-    jsonb_agg(
-      jsonb_build_object(
-        'change_type', case w.kind
-          when 'status' then 'status_changed'
-          when 'rate'   then 'rate_limit_changed'
-          when 'sub'    then 'subscription_required'
-          when 'pool'   then case
-                            when nullif(next->>w.field,'')::numeric
-                                 < nullif(prev->>w.field,'')::numeric
-                              then 'quota_decreased' else 'quota_increased' end
-          -- A card requirement can be added or removed; they are different
-          -- events and a reader needs to know which way it moved.
-          else case when next->>w.field = 'true'
-                    then 'card_required' else 'card_removed' end
-        end,
-        'field',     w.field,
-        'old_value', prev->>w.field,
-        'new_value', next->>w.field,
-        'severity',  w.severity
-      )
-      order by w.field
-    ),
-    '[]'::jsonb
-  )
+  select
+    case w.kind
+      when 'status' then 'status_changed'
+      when 'rate'   then 'rate_limit_changed'
+      when 'sub'    then 'subscription_required'
+      when 'pool'   then case
+                        when nullif(next->>w.field,'')::numeric
+                             < nullif(prev->>w.field,'')::numeric
+                          then 'quota_decreased' else 'quota_increased' end
+      -- A card requirement can be added or removed; those are different events
+      -- and a reader needs to know which way it moved.
+      else case when next->>w.field = 'true'
+                then 'card_required' else 'card_removed' end
+    end,
+    w.field,
+    prev->>w.field,
+    next->>w.field,
+    w.severity
   from watched w
   where coalesce(prev->>w.field, '') is distinct from coalesce(next->>w.field, '')
 $$;
 
 comment on function public.rpc_offer_changes(jsonb, jsonb) is
-  'Diffs a stored offer against a collected one. Returns [] when nothing moved, which is what makes a repeated sweep a no-op.';
+  'Diffs a stored offer against a collected one, one typed row per field that moved. Returns no rows when nothing changed.';
 
 -- Reconciles one provider: upserts the provider and its models, inserts or
 -- updates each offer, appends an observation for every offer that changed, and
@@ -103,9 +127,17 @@ declare
   arg        jsonb := coalesce(p->0, p);
   v_slug     text;
   v_prov     bigint;
+  -- Declared explicitly as jsonb rather than left to plpgsql's implicit
+  -- `record` loop variables. A record carries no static type, so a chained
+  -- expression such as `v_offer->'evidence'->>'field'` has no type to resolve
+  -- the second operator against and fails at runtime with
+  -- "operator does not exist: text ->> unknown" — but only on the paths that
+  -- actually execute it, which is why it stayed hidden until an offer changed.
   v_offer     jsonb;
   v_event     jsonb;
-  v_change    jsonb;
+  v_evidence  jsonb;
+  -- A typed record from rpc_offer_changes, not a jsonb value.
+  v_change    public.offer_change;
   v_prev      offers%rowtype;
   v_prev_event events%rowtype;
   v_offer_id  bigint;
@@ -113,7 +145,24 @@ declare
   v_model_new boolean;
   v_model_slug text;
   v_offer_key text;
-  v_ev_slug   text;
+  -- Event fields, bound once from the collected jsonb so no DML statement has
+  -- to resolve a `->>` on a loop variable.
+  v_ev_slug         text;
+  v_ev_name         text;
+  v_ev_description  text;
+  v_ev_status       text;
+  v_ev_start        timestamptz;
+  v_ev_end          timestamptz;
+  v_ev_pool_size    bigint;
+  v_ev_pool_left    bigint;
+  v_ev_pool_text    text;
+  v_ev_unit         text;
+  v_ev_models       jsonb;
+  v_ev_eligibility  text;
+  v_ev_requirements text;
+  v_ev_exhaustion   text;
+  v_ev_url          text;
+  v_ev_announced    timestamptz;
   v_status    offer_status;
   v_created   int := 0;
   v_updated   int := 0;
@@ -337,36 +386,66 @@ begin
       coalesce(nullif(v_offer->>'verification_level','')::verification_level, 'community'));
 
     -- Changes, deduped so a retried sweep cannot duplicate history.
+    --
+    -- v_change is a typed record, so its fields are read directly. Nothing here
+    -- uses a jsonb accessor on a loop variable, which is what previously made
+    -- this branch fail to resolve at runtime.
     for v_change in
-      select * from jsonb_array_elements(
-        public.rpc_offer_changes(to_jsonb(v_prev), v_offer))
+      select * from public.rpc_offer_changes(to_jsonb(v_prev), v_offer)
     loop
+      v_evidence := v_offer->'evidence';
       insert into changes (
         provider_id, offer_id, change_type, field, old_value, new_value,
         detected_at, source_url, evidence, severity, dedupe_key)
       values (
         v_prov, v_offer_id,
-        (v_change->>'change_type')::change_type,
-        v_change->>'field', v_change->>'old_value', v_change->>'new_value',
+        v_change.change_type::change_type,
+        v_change.field, v_change.old_value, v_change.new_value,
         now(),
         coalesce(nullif(v_offer->>'official_evidence_url',''), v_offer->>'source_url'),
-        coalesce(v_offer->'evidence'->>(v_change->>'field'), v_offer->>'official_evidence_url'),
-        v_change->>'severity',
+        coalesce(
+          v_evidence ->> v_change.field,
+          v_offer->>'official_evidence_url'
+        ),
+        v_change.severity,
         encode(digest(
-          (v_change->>'change_type' || '|' || v_change->>'field' || '|'
-           || coalesce(v_change->>'old_value','') || '|'
-           || coalesce(v_change->>'new_value','') || '|' || v_offer_key)::text,
+          (v_change.change_type || '|' || coalesce(v_change.field,'') || '|'
+           || coalesce(v_change.old_value,'') || '|'
+           || coalesce(v_change.new_value,'') || '|' || v_offer_key)::text,
           'sha256'), 'hex'))
       on conflict (dedupe_key) where dedupe_key is not null do nothing;
     end loop;
   end loop;
 
   -- events -------------------------------------------------------------------
+  --
+  -- Every field is read out of the collected jsonb once, into an explicitly
+  -- typed variable, and the statements below use only those variables. The
+  -- accessors are kept out of the DML on purpose: inside plpgsql a `->>` on a
+  -- loop variable does not always resolve to the jsonb operator, and it fails
+  -- at runtime with "operator does not exist: text ->> unknown". Binding first
+  -- makes every type explicit, so there is nothing left to infer.
   for v_event in
     select * from jsonb_array_elements(coalesce(arg->'events', '[]'::jsonb))
   loop
-    v_ev_slug := nullif(v_event->>'slug','');
-    if v_ev_slug is null then
+    v_ev_slug        := nullif(v_event->>'slug', '');
+    v_ev_name        := v_event->>'name';
+    v_ev_description := v_event->>'description';
+    v_ev_status      := nullif(v_event->>'status', '');
+    v_ev_start       := nullif(v_event->>'start_at', '')::timestamptz;
+    v_ev_end         := nullif(v_event->>'end_at', '')::timestamptz;
+    v_ev_pool_size   := nullif(v_event->>'pool_size', '')::bigint;
+    v_ev_pool_left   := nullif(v_event->>'pool_remaining', '')::bigint;
+    v_ev_pool_text   := v_event->>'pool_remaining';
+    v_ev_unit        := coalesce(nullif(v_event->>'unit', ''), 'tokens');
+    v_ev_models      := coalesce(v_event->'models', '[]'::jsonb);
+    v_ev_eligibility := v_event->>'eligibility';
+    v_ev_requirements:= v_event->>'requirements';
+    v_ev_exhaustion  := v_event->>'exhaustion_condition';
+    v_ev_url         := v_event->>'official_url';
+    v_ev_announced   := nullif(v_event->>'announced_at', '')::timestamptz;
+
+    if v_ev_slug is null or v_ev_status is null then
       continue;
     end if;
 
@@ -378,40 +457,40 @@ begin
     -- the product produces.
     if found
        and v_prev_event.pool_remaining is not null
-       and nullif(v_event->>'pool_remaining','')::bigint is not null
-       and v_prev_event.pool_remaining is distinct from (v_event->>'pool_remaining')::bigint then
+       and v_ev_pool_left is not null
+       and v_prev_event.pool_remaining is distinct from v_ev_pool_left then
       insert into changes (
         provider_id, event_id, change_type, field, old_value, new_value,
         detected_at, source_url, evidence, severity, dedupe_key)
       values (
         v_prov, v_prev_event.id,
-        case when (v_event->>'pool_remaining')::bigint < v_prev_event.pool_remaining
-             then 'quota_decreased' else 'quota_increased' end,
+        case when v_ev_pool_left < v_prev_event.pool_remaining
+             then 'quota_decreased' else 'quota_increased' end::change_type,
         'pool_remaining',
-        v_prev_event.pool_remaining::text, v_event->>'pool_remaining',
-        now(), v_event->>'official_url',
-        'Pool ' || coalesce(v_event->>'unit','units') || ' read from ' || coalesce(v_event->>'official_url','source'),
+        v_prev_event.pool_remaining::text, v_ev_pool_text,
+        now(), v_ev_url,
+        'Pool ' || v_ev_unit || ' read from ' || coalesce(v_ev_url, 'source'),
         'info',
         encode(digest(
           ('pool|' || v_ev_slug || '|'
            || v_prev_event.pool_remaining::text || '|'
-           || v_event->>'pool_remaining')::text, 'sha256'), 'hex'))
+           || v_ev_pool_text)::text, 'sha256'), 'hex'))
       on conflict (dedupe_key) where dedupe_key is not null do nothing;
     end if;
 
-    if found and v_prev_event.status::text is distinct from v_event->>'status' then
+    if found and v_prev_event.status::text is distinct from v_ev_status then
       insert into changes (
         provider_id, event_id, change_type, field, old_value, new_value,
         detected_at, source_url, evidence, severity, dedupe_key)
       values (
         v_prov, v_prev_event.id, 'status_changed', 'event_status',
-        v_prev_event.status::text, v_event->>'status',
-        now(), v_event->>'official_url',
-        'Event state read from ' || coalesce(v_event->>'official_url','source'),
+        v_prev_event.status::text, v_ev_status,
+        now(), v_ev_url,
+        'Event state read from ' || coalesce(v_ev_url, 'source'),
         'warning',
         encode(digest(
           ('evstatus|' || v_ev_slug || '|' || v_prev_event.status::text
-           || '|' || v_event->>'status')::text, 'sha256'), 'hex'))
+           || '|' || v_ev_status)::text, 'sha256'), 'hex'))
       on conflict (dedupe_key) where dedupe_key is not null do nothing;
     end if;
 
@@ -420,16 +499,16 @@ begin
       pool_size, pool_remaining, unit, models, eligibility, requirements,
       exhaustion_condition, official_url, announced_at, last_verified_at)
     values (
-      v_prov, v_event->>'name', v_ev_slug, v_event->>'description',
-      (v_event->>'status')::event_status,
-      nullif(v_event->>'start_at','')::timestamptz, nullif(v_event->>'end_at','')::timestamptz,
-      nullif(v_event->>'pool_size','')::bigint, nullif(v_event->>'pool_remaining','')::bigint,
-      coalesce(nullif(v_event->>'unit',''),'tokens'),
+      v_prov, v_ev_name, v_ev_slug, v_ev_description,
+      v_ev_status::event_status,
+      v_ev_start, v_ev_end,
+      v_ev_pool_size, v_ev_pool_left,
+      v_ev_unit,
       coalesce((select array_agg(value::text) from jsonb_array_elements_text(
-        coalesce(v_event->'models','[]'::jsonb))), '{}'),
-      v_event->>'eligibility', v_event->>'requirements',
-      v_event->>'exhaustion_condition', v_event->>'official_url',
-      coalesce(nullif(v_event->>'announced_at','')::timestamptz, now()), now())
+        v_ev_models)), '{}'),
+      v_ev_eligibility, v_ev_requirements,
+      v_ev_exhaustion, v_ev_url,
+      coalesce(v_ev_announced, now()), now())
     on conflict (slug) do update set
       status          = excluded.status,
       start_at        = excluded.start_at,

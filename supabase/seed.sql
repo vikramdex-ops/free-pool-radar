@@ -198,24 +198,47 @@ on conflict (slug) do nothing;
 
 -- ---------------------------------------------------------------------------
 -- historical changes (§64)
+--
+-- Each row carries a stable dedupe_key and defers to the table's unique index,
+-- so re-running the seed adds nothing. The sweep uses the same mechanism, which
+-- is why the column exists at all: an idempotent write should not need a second,
+-- differently-shaped guard.
 -- ---------------------------------------------------------------------------
-insert into changes (provider_id, change_type, field, old_value, new_value, detected_at, source_url, evidence, severity)
-select id,'free_tier_ended','status','live','ended','2026-07-30T00:00:00Z','https://docs.github.com/en/github-models','GitHub documentation states the service was fully retired on 30 July 2026','critical' from providers where slug='github-models';
+insert into changes (provider_id, change_type, field, old_value, new_value, detected_at, source_url, evidence, severity, dedupe_key)
+select id,'free_tier_ended','status','live','ended','2026-07-30T00:00:00Z','https://docs.github.com/en/github-models','GitHub documentation states the service was fully retired on 30 July 2026','critical',
+       encode(extensions.digest('seed|github-models|free_tier_ended|status|live|ended','sha256'),'hex')
+from providers where slug='github-models'
+on conflict (dedupe_key) where dedupe_key is not null do nothing;
 
-insert into changes (provider_id, change_type, field, old_value, new_value, detected_at, source_url, evidence, severity)
-select id,'free_tier_ended','status','live','ended','2026-03-15T00:00:00Z','https://chutes.ai/news/community-announcement-february','The 200 req/day non-TEE quota ran to 15 March 2026, then the plan was retired','critical' from providers where slug='chutes';
+insert into changes (provider_id, change_type, field, old_value, new_value, detected_at, source_url, evidence, severity, dedupe_key)
+select id,'free_tier_ended','status','live','ended','2026-03-15T00:00:00Z','https://chutes.ai/news/community-announcement-february','The 200 req/day non-TEE quota ran to 15 March 2026, then the plan was retired','critical',
+       encode(extensions.digest('seed|chutes|free_tier_ended|status|live|ended','sha256'),'hex')
+from providers where slug='chutes'
+on conflict (dedupe_key) where dedupe_key is not null do nothing;
 
-insert into changes (provider_id, change_type, field, old_value, new_value, detected_at, source_url, evidence, severity)
-select id,'free_tier_ended','status','live','ended','2025-07-01T00:00:00Z','https://docs.together.ai/docs/billing-credits','Docs state a minimum $5 credit purchase is required to access the API','critical' from providers where slug='together';
+insert into changes (provider_id, change_type, field, old_value, new_value, detected_at, source_url, evidence, severity, dedupe_key)
+select id,'free_tier_ended','status','live','ended','2025-07-01T00:00:00Z','https://docs.together.ai/docs/billing-credits','Docs state a minimum $5 credit purchase is required to access the API','critical',
+       encode(extensions.digest('seed|together|free_tier_ended|status|live|ended','sha256'),'hex')
+from providers where slug='together'
+on conflict (dedupe_key) where dedupe_key is not null do nothing;
 
-insert into changes (provider_id, change_type, field, old_value, new_value, detected_at, source_url, evidence, severity)
-select id,'card_required','card_required','false','true','2026-01-12T00:00:00Z','https://vercel.com/docs/ai-gateway/faq','A 403 customer_verification_required response means a payment method must be added before free credits can be spent','critical' from providers where slug='vercel-ai-gateway';
+insert into changes (provider_id, change_type, field, old_value, new_value, detected_at, source_url, evidence, severity, dedupe_key)
+select id,'card_required','card_required','false','true','2026-01-12T00:00:00Z','https://vercel.com/docs/ai-gateway/faq','A 403 customer_verification_required response means a payment method must be added before free credits can be spent','critical',
+       encode(extensions.digest('seed|vercel-ai-gateway|card_required|card_required|false|true','sha256'),'hex')
+from providers where slug='vercel-ai-gateway'
+on conflict (dedupe_key) where dedupe_key is not null do nothing;
 
-insert into changes (provider_id, change_type, field, old_value, new_value, detected_at, source_url, evidence, severity)
-select id,'card_required','card_required','false','true','2026-01-01T00:00:00Z','https://inference-docs.cerebras.ai/support/rate-limits','Docs state playground and API access remain inactive until a verified payment method is added','critical' from providers where slug='cerebras';
+insert into changes (provider_id, change_type, field, old_value, new_value, detected_at, source_url, evidence, severity, dedupe_key)
+select id,'card_required','card_required','false','true','2026-01-01T00:00:00Z','https://inference-docs.cerebras.ai/support/rate-limits','Docs state playground and API access remain inactive until a verified payment method is added','critical',
+       encode(extensions.digest('seed|cerebras|card_required|card_required|false|true','sha256'),'hex')
+from providers where slug='cerebras'
+on conflict (dedupe_key) where dedupe_key is not null do nothing;
 
-insert into changes (provider_id, change_type, field, old_value, new_value, detected_at, source_url, evidence, severity)
-select id,'quota_decreased','rpd',null,'50','2025-09-01T00:00:00Z','https://openrouter.ai/docs/api-reference/limits','Unfunded accounts are capped at 50 requests/day; 1,000/day requires $10 of lifetime credits','warning' from providers where slug='openrouter';
+insert into changes (provider_id, change_type, field, old_value, new_value, detected_at, source_url, evidence, severity, dedupe_key)
+select id,'quota_decreased','rpd',null,'50','2025-09-01T00:00:00Z','https://openrouter.ai/docs/api-reference/limits','Unfunded accounts are capped at 50 requests/day; 1,000/day requires $10 of lifetime credits','warning',
+       encode(extensions.digest('seed|openrouter|quota_decreased|rpd||50','sha256'),'hex')
+from providers where slug='openrouter'
+on conflict (dedupe_key) where dedupe_key is not null do nothing;
 
 -- ---------------------------------------------------------------------------
 -- discovery queue (§52)
