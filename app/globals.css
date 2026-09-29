@@ -1391,3 +1391,367 @@ body {
 .skip:focus { top: 1rem; }
 
 .hairline { border-top: 1px solid var(--t-rule-2); }
+
+/* ==================================================================
+   A30 SEARCH, A52 DISCOVERY, A31-A32 FILTERS AND SORTING
+   ------------------------------------------------------------------
+   Added for the three new routes and the rebuilt filter system. Kept in
+   one block rather than scattered, because they share one idea: every
+   control states what it is filtering, and every result says how it was
+   interpreted.
+   ================================================================== */
+
+/* ---------- buttons ---------- */
+
+.btn-primary {
+  background: var(--t-live);
+  border-color: var(--t-live);
+  color: var(--t-bg);
+}
+.btn-primary:hover { filter: brightness(1.1); }
+
+.btn-quiet { background: transparent; }
+
+.btn-danger:hover {
+  border-color: var(--t-ended);
+  color: var(--t-ended);
+}
+
+/* ---------- filter and sort system (A31, A32) ---------- */
+
+/* A link styled as a filter chip, for the queues that are server-rendered.
+   The pressed state is drawn with aria-current, not a class, so it cannot
+   drift out of step with what a screen reader announces. */
+.filter-on {
+  color: var(--t-ink);
+  border-color: var(--t-ink-3);
+  background: var(--t-raise);
+}
+
+.filter-sep {
+  width: 1px;
+  align-self: stretch;
+  background: var(--t-rule);
+  margin-inline: 0.25rem;
+}
+
+/* Grouped selects. The group label is the question being asked — what, who,
+   how fresh, in what order — so the shape of the filter set is legible
+   before anything is selected. */
+.filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  gap: 1rem 1.5rem;
+  margin: 1.25rem 0 0;
+  padding: 1.125rem;
+  border: 1px solid var(--t-rule-2);
+  border-radius: 2px;
+  background: var(--t-raise);
+}
+
+.filters-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.filters-group select {
+  font-family: var(--f-annot);
+  font-size: 0.8125rem;
+  color: var(--t-ink);
+  background: var(--t-panel);
+  border: 1px solid var(--t-rule);
+  border-radius: 2px;
+  padding: 0.4375rem 0.5rem;
+  width: 100%;
+  /* Long provider names must truncate rather than widen the grid track. */
+  text-overflow: ellipsis;
+}
+
+/* The hint under the sort control. Its job is to stop "largest pool" from
+   being read as "best" (A3, A32). */
+.filters-hint {
+  font-size: 0.6875rem;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.filters-count {
+  margin: 0.875rem 0 1.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  align-items: baseline;
+}
+
+/* ---------- search (A30) ---------- */
+
+.search-form {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0 0 0.5rem;
+}
+
+.search-input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--f-mono);
+  font-size: 0.9375rem;
+  color: var(--t-ink);
+  background: var(--t-panel);
+  border: 1px solid var(--t-rule);
+  border-radius: 2px;
+  padding: 0.625rem 0.75rem;
+}
+
+.search-examples {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.search-chip {
+  font-family: var(--f-mono);
+  font-size: 0.8125rem;
+  color: var(--t-ink-2);
+  background: var(--t-panel);
+  border: 1px solid var(--t-rule);
+  border-radius: 2px;
+  padding: 0.3125rem 0.5rem;
+}
+.search-chip:hover { color: var(--t-ink); border-color: var(--t-ink-3); }
+
+/* How the query was read. Shown before the results so "no card" returning
+   forty offers is legible as forty cardless offers, not a fuzzy match. */
+.search-terms {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem;
+  margin: 0;
+}
+
+.search-truncated {
+  margin: 0.5rem 0 0;
+  padding: 0.5rem 0.625rem;
+  border-left: 2px solid var(--t-upcoming);
+  background: var(--t-raise);
+}
+
+.results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.result { padding: 0.875rem 1rem; }
+
+.result-title {
+  font-size: 0.9375rem;
+  margin: 0.25rem 0 0.375rem;
+}
+
+.browse-links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+}
+
+/* ---------- events index ---------- */
+
+.event-jump {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  padding: 0.75rem 0;
+  /* No bottom margin: the section below already supplies its own spacing, and
+     the two together left a band of dead space the height of a heading. */
+  margin-bottom: 0;
+  border-block: 1px solid var(--t-rule-2);
+  font-family: var(--f-annot);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.event-jump a { color: var(--t-ink-3); }
+.event-jump a:hover { color: var(--t-ink); }
+
+/* The first section after the jump nav should not repeat the page's leading
+   padding, or the jump bar and the heading end up marooned either side of a
+   gap. */
+.event-jump + .sect { padding-top: 0.5rem; }
+
+.event-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.event-row { padding: 1.125rem 1.25rem; }
+
+.event-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.event-name {
+  font-size: 1rem;
+  margin: 0.25rem 0 0;
+}
+
+.event-desc {
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--t-ink-2);
+  margin: 0.75rem 0 0;
+  max-width: 68ch;
+}
+
+.event-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--t-rule-2);
+}
+
+/* ---------- discovery queue (A52) ---------- */
+
+.admin-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--t-rule-2);
+}
+
+.cand-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.cand { padding: 1.125rem 1.25rem; }
+
+.cand-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.cand-title {
+  font-size: 1rem;
+  margin: 0.25rem 0 0;
+}
+
+.cand-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  gap: 0.875rem 1.5rem;
+  margin: 1rem 0 0;
+}
+.cand-facts dt { margin-bottom: 0.25rem; }
+.cand-facts dd {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--t-ink-2);
+  overflow-wrap: anywhere;
+}
+
+/* The AI read is set apart from the evidence above it, because A52 lists them
+   as separate fields and they are not the same kind of claim: one was
+   observed, the other was inferred. */
+.cand-ai {
+  margin-top: 1.125rem;
+  padding: 0.75rem 0.875rem;
+  border: 1px solid var(--t-rule-2);
+  border-left: 2px solid var(--t-info, var(--t-ink-3));
+  border-radius: 2px;
+  background: var(--t-raise);
+}
+
+.cand-ai-text {
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--t-ink-2);
+  margin: 0.375rem 0 0;
+}
+
+.cand-history {
+  margin-top: 0.875rem;
+  font-size: 0.8125rem;
+}
+.cand-history summary {
+  cursor: pointer;
+  color: var(--t-ink-3);
+  font-family: var(--f-annot);
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.cand-decisions {
+  margin: 0.625rem 0 0;
+  padding-left: 1.125rem;
+  display: grid;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+}
+
+.cand-actions {
+  margin-top: 1.125rem;
+  padding-top: 0.875rem;
+  border-top: 1px solid var(--t-rule-2);
+}
+
+.cand-note {
+  width: 100%;
+  font-family: var(--f-mono);
+  font-size: 0.8125rem;
+  color: var(--t-ink);
+  background: var(--t-panel);
+  border: 1px solid var(--t-rule);
+  border-radius: 2px;
+  padding: 0.4375rem 0.5rem;
+  margin-bottom: 0.625rem;
+}
+
+.cand-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.625rem;
+}
+
+.form-error {
+  margin: 0 0 0.875rem;
+  padding: 0.5rem 0.625rem;
+  font-size: 0.8125rem;
+  color: var(--t-ended);
+  border: 1px solid var(--t-ended);
+  border-radius: 2px;
+  background: color-mix(in oklab, var(--t-ended) 8%, transparent);
+}

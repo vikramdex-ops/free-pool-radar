@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { LiveBrowser } from "@/components/LiveBrowser";
-import { getLiveOffers, getStatus } from "@/lib/db";
+import { getChanges, getLiveOffers, getStatus } from "@/lib/db";
 import { stampUTC } from "@/lib/format";
 
 export const revalidate = 300;
@@ -8,14 +8,20 @@ export const revalidate = 300;
 export const metadata: Metadata = {
   title: "Live free AI access",
   description:
-    "Every currently usable free AI inference route, filterable by access type, keyless availability, card and subscription requirement, model family and OpenAI or Anthropic API compatibility.",
+    "Every currently usable free AI inference route, filterable by status, provider, model, access type, keyless availability, card and subscription requirement, published limits, freshness and OpenAI or Anthropic API compatibility.",
   alternates: { canonical: "/live" },
 };
 
-/** §21. The complete live set, with the filter set applied client-side. */
+/** §21, §31, §32. The complete live set with the filter and sort system. */
 export default async function LivePage() {
   const now = Date.now();
-  const [offers, status] = await Promise.all([getLiveOffers(), getStatus()]);
+  // Changes are fetched because "recently changed" (§32) cannot be derived from
+  // the offer row: that holds current state, not when it last moved.
+  const [offers, changes, status] = await Promise.all([
+    getLiveOffers(),
+    getChanges(500),
+    getStatus(),
+  ]);
 
   return (
     <main id="main" className="wrap">
@@ -38,7 +44,7 @@ export default async function LivePage() {
       </header>
 
       <div className="sect" style={{ paddingTop: "1.5rem" }}>
-        <LiveBrowser offers={offers} now={now} />
+        <LiveBrowser offers={offers} changes={changes} now={now} />
       </div>
     </main>
   );

@@ -1,7 +1,13 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { EmptyState } from "@/components/ui";
-import { getSources, getStatus } from "@/lib/db";
+import { getStatus } from "@/lib/db";
+import { getSourcesAdmin } from "@/lib/admin-db";
+import { ADMIN_COOKIE, verifySessionToken } from "@/lib/auth";
 import { stampUTC } from "@/lib/format";
+import { signOut } from "./login/actions";
 
 export const metadata: Metadata = {
   // An internal operational page: it must never be indexed.
@@ -9,38 +15,48 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-/** Whether the admin routes may be rendered at all. */
-export function adminEnabled(): boolean {
-  return Boolean(process.env.ADMIN_TOKEN);
+/**
+ * Never prerender this page.
+ *
+ * It reports live source health, so a build-time snapshot is wrong by
+ * definition. Worse, the middleware guards the route but does not opt the page
+ * into dynamic rendering, so without this Next prerendered it during the build
+ * — with no credentials present — and served that frozen HTML indefinitely. The
+ * page said "no server-side database credential is configured" and "the source
+ * registry is empty" while twelve sources were registered and answering.
+ *
+ * The read of the session below is deliberate as well as the directive: it
+ * ties the render to the request, so a future edit that drops this line still
+ * cannot produce a cached copy of an authenticated page.
+ */
+export const dynamic = "force-dynamic";
+
+async function assertSession(): Promise<void> {
+  const store = await cookies();
+  const ok = await verifySessionToken(store.get(ADMIN_COOKIE)?.value);
+  // Defence in depth. The middleware has already refused an unauthenticated
+  // request, so reaching this without a valid token means the gate and the page
+  // have drifted apart, and the page must not be the one that quietly allows it.
+  if (!ok) redirect("/admin/login");
 }
 
 /**
  * §50. Source health.
  *
- * Reachable without a token only when one is not configured, which is the local
- * development case. In production the route refuses to render rather than
- * relying on a hidden URL, a query parameter, or a password in the frontend
- * (§80) — those are not security controls.
+ * Access control is checked here as well as in the middleware, not instead of
+ * it. The middleware is the gate; this is the second lock on the same door, and
+ * it is what stops the page from being rendered at all for an anonymous reader.
  */
 export default async function AdminPage() {
-  if (process.env.NODE_ENV === "production" && !adminEnabled()) {
-    return (
-      <>
-        <main id="main" className="wrap">
-          <header className="page-head">
-            <h1 className="page-title">Admin unavailable</h1>
-            <p className="page-lede">
-              This deployment has no <code>ADMIN_TOKEN</code> set, so the
-              operational routes are disabled. Set one and redeploy to enable
-              them.
-            </p>
-          </header>
-        </main>
-      </>
-    );
-  }
+  await assertSession();
 
-  const [sources, status] = await Promise.all([getSources(), getStatus()]);
+  // The registry is read with the elevated client. The public read path is
+  // subject to RLS and returns an empty list rather than an error, which would
+  // make this page report an empty registry while sources are registered.
+  const [{ data: sources, error: sourcesError }, status] = await Promise.all([
+    getSourcesAdmin(),
+    getStatus(),
+  ]);
 
   return (
     <>
@@ -53,6 +69,16 @@ export default async function AdminPage() {
             responding does not end its offers; those offers simply stop being
             re-verified and go stale on their own.
           </p>
+          <div className="admin-bar">
+            <Link href="/discovery" className="link-ev">
+              Discovery queue <span aria-hidden="true">→</span>
+            </Link>
+            <form action={signOut}>
+              <button type="submit" className="btn btn-quiet">
+                Sign out
+              </button>
+            </form>
+          </div>
         </header>
 
         <div className="sect" style={{ paddingTop: 0 }}>
@@ -91,10 +117,20 @@ export default async function AdminPage() {
             </div>
           </dl>
 
-          {sources.length === 0 ? (
+          {sourcesError ? (
+            /* A read that failed is not an empty registry. Saying so plainly is
+               the whole point of an operational page. */
+            <div className="empty">
+              <p className="empty-title">The registry could not be read</p>
+              <p>
+                This is a read failure, not an empty registry — the source rows
+                may well be there. {sourcesError}
+              </p>
+            </div>
+          ) : sources.length === 0 ? (
             <EmptyState title="No sources registered">
-              The source registry is empty. Add rows to the sources table to
-              begin monitoring.
+              The source registry is genuinely empty. Add rows to the sources
+              table to begin monitoring.
             </EmptyState>
           ) : (
             <div className="tbl-wrap">
