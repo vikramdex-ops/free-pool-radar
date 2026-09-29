@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 };
 
 /**
- * Â§25. A searchable model database.
+ * §25. A searchable model database.
  *
  * Rendered as a full table with a client-side filter rather than a paginated
  * server query: the dataset is small enough to ship whole, and filtering
@@ -64,10 +64,10 @@ export default async function ModelsPage() {
                       </td>
                       <td className="num">{m.model_id}</td>
                       <td className="num">
-                        {m.context_window ? num(m.context_window) : "â€”"}
+                        {m.context_window ? num(m.context_window) : "—"}
                       </td>
                       <td>
-                        {m.capabilities.length ? m.capabilities.join(", ") : "â€”"}
+                        {m.capabilities.length ? m.capabilities.join(", ") : "—"}
                       </td>
                       <td className="num">
                         {new Date(m.first_seen_at).toISOString().slice(0, 10)}

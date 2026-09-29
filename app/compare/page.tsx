@@ -14,10 +14,10 @@ export const metadata: Metadata = {
 };
 
 /**
- * Â§29. A factual comparison, deliberately without a winner.
+ * §29. A factual comparison, deliberately without a winner.
  *
  * The columns are exactly the dimensions the product considers worth
- * publishing (Â§57): terms, compatibility, capacity and freshness. Nothing is
+ * publishing (§57): terms, compatibility, capacity and freshness. Nothing is
  * scored or totalled, because a total would imply the dimensions are
  * commensurable, and they are not.
  */
@@ -47,7 +47,7 @@ export default async function ComparePage() {
     byProvider.set(slug, row);
   }
 
-  // Providers with the most free routes first â€” a count, not a judgement.
+  // Providers with the most free routes first — a count, not a judgement.
   const rows = [...byProvider.values()].sort(
     (a, b) => b.offers.length - a.offers.length,
   );
@@ -218,7 +218,7 @@ type Offer = Awaited<ReturnType<typeof getLiveOffers>>[number];
 /**
  * "Yes (some)" rather than a bare yes, because a provider can offer both a
  * cardless route and a card-gated one. Collapsing that to "yes" would be
- * exactly the kind of simplification Â§5 forbids.
+ * exactly the kind of simplification §5 forbids.
  */
 function anyTrue(offers: Offer[], pick: (o: Offer) => boolean): string {
   if (offers.length === 0) return NOT_STATED;
@@ -241,5 +241,5 @@ function rateSummary(offers: Offer[]): string {
   const parts: string[] = [];
   if (rpm.length) parts.push(`${rpm.sort((a, b) => a - b).join("/")} rpm`);
   if (rpd.length) parts.push(`${rpd.sort((a, b) => a - b).join("/")} req/day`);
-  return parts.length ? parts.join(" Â· ") : NOT_STATED;
+  return parts.length ? parts.join(" · ") : NOT_STATED;
 }

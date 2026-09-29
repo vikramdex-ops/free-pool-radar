@@ -1,15 +1,79 @@
 import Link from "next/link";
-import type { Change, ChangeWithProvider, OfferWithProvider } from "@/lib/db";
-import { ago, stampUTC } from "@/lib/format";
-import { ChangeHeadline, EmptyState, EvidenceLink } from "./ui";
+import type { ChangeWithProvider, OfferWithProvider } from "@/lib/db";
+import { CHANGE_LABEL, FIELD_LABEL, ago, stampUTC } from "@/lib/format";
+import { EmptyState, EvidenceLink } from "./ui";
 
 /**
  * What is new and what changed (§22, §23).
  *
- * Derived from the change log rather than assembled from current state, which
- * is what makes the history honest: an entry exists because a difference was
- * detected between two observations, not because today's value looks notable.
+ * Two problems this component exists to solve.
+ *
+ * The first is that a change is only meaningful with its subject. A sweep that
+ * discovers eighteen new routes at one provider produces eighteen rows, and
+ * every one of them reads "offer: not stated → rotating_free_model" against the
+ * same source URL. A reader sees four identical lines and concludes the page is
+ * broken, when in fact four different models were found. So the subject is
+ * always named, and rows sharing a provider, a change type and a moment are
+ * grouped into one entry with the routes listed beneath it.
+ *
+ * The second is that "not stated" is the wrong thing to print for a new offer.
+ * There was no previous value, so the row should say the route was added rather
+ * than showing an arrow from nothing.
+ *
+ * The history is derived from the change log rather than assembled from current
+ * state, which is what makes it honest: a row exists because a difference was
+ * detected between two observations.
  */
+
+interface Group {
+  key: string;
+  provider: ChangeWithProvider["provider"];
+  changeType: string;
+  rows: ChangeWithProvider[];
+  first: ChangeWithProvider;
+}
+
+/**
+ * Groups changes a reader would otherwise see as identical.
+ *
+ * Only consecutive rows are merged, and only within a short window, so a
+ * provider that changes something today and again next week still shows as two
+ * separate events. Merging across time would quietly rewrite history.
+ */
+function groupChanges(
+  changes: ChangeWithProvider[],
+  windowMs = 6 * 3600_000,
+): Group[] {
+  const groups: Group[] = [];
+  for (const c of changes) {
+    const last = groups[groups.length - 1];
+    const sameSubject =
+      last !== undefined &&
+      last.changeType === c.change_type &&
+      last.provider?.slug === c.provider?.slug &&
+      Math.abs(
+        new Date(last.first.detected_at).getTime() -
+          new Date(c.detected_at).getTime(),
+      ) < windowMs;
+
+    if (sameSubject && last) {
+      last.rows.push(c);
+    } else {
+      groups.push({
+        key: `${c.provider?.slug ?? "?"}-${c.change_type}-${c.id}`,
+        provider: c.provider,
+        changeType: c.change_type,
+        rows: [c],
+        first: c,
+      });
+    }
+  }
+  return groups;
+}
+
+/** How many subjects to name before collapsing the rest into a count. */
+const NAME_LIMIT = 4;
+
 export function ChangeFeed({
   changes,
   now,
@@ -23,12 +87,15 @@ export function ChangeFeed({
   now: number;
   title: string;
   id?: string;
-  /** Restrict to these change types, e.g. discoveries only. */
   kinds?: string[];
   emptyTitle: string;
   emptyBody: string;
 }) {
-  const rows = kinds ? changes.filter((c) => kinds.includes(c.change_type)) : changes;
+  const rows = kinds
+    ? changes.filter((c) => kinds.includes(c.change_type))
+    : changes;
+
+  const groups = groupChanges(rows);
 
   return (
     <section id={id} className="sect">
@@ -40,42 +107,118 @@ export function ChangeFeed({
         </Link>
       </div>
 
-      {rows.length === 0 ? (
+      {groups.length === 0 ? (
         <EmptyState title={emptyTitle}>{emptyBody}</EmptyState>
       ) : (
         <ol className="feed">
-          {rows.map((c) => (
-            <li key={c.id} className="panel feed-row">
-              <div className="feed-when">
-                <p className="mono feed-stamp">{stampUTC(c.detected_at)}</p>
-                <p className="annot mono">{ago(c.detected_at, now)}</p>
-              </div>
-              <div className="feed-what">
-                {c.provider ? (
-                  <Link href={`/providers/${c.provider.slug}`} className="link">
-                    {c.provider.name}
-                  </Link>
-                ) : (
-                  <span className="strong">Unattributed</span>
-                )}
-                <ChangeHeadline
-                  type={c.change_type}
-                  field={c.field}
-                  oldValue={c.old_value}
-                  newValue={c.new_value}
-                />
-                {c.evidence ? <p className="annot">{c.evidence}</p> : null}
-              </div>
-              <div className="feed-source">
-                <EvidenceLink href={c.source_url} kind="Evidence" />
-              </div>
-            </li>
+          {groups.map((g) => (
+            <GroupRow key={g.key} group={g} now={now} />
           ))}
         </ol>
       )}
     </section>
   );
 }
+
+function GroupRow({ group, now }: { group: Group; now: number }) {
+  const { provider, rows, first } = group;
+  const count = rows.length;
+  const named = rows.slice(0, NAME_LIMIT);
+  const rest = count - named.length;
+
+  return (
+    <li className="panel feed-row">
+      <div className="feed-when">
+        <p className="mono feed-stamp">{stampUTC(first.detected_at)}</p>
+        <p className="annot mono">{ago(first.detected_at, now)}</p>
+      </div>
+
+      <div className="feed-what">
+        <div className="feed-subject-head">
+          {provider ? (
+            <Link href={`/providers/${provider.slug}`} className="link">
+              {provider.name}
+            </Link>
+          ) : (
+            <span className="strong">Unattributed</span>
+          )}
+          {count > 1 ? (
+            <span className="badge badge-info">
+              {count} route{count === 1 ? "" : "s"}
+            </span>
+          ) : null}
+        </div>
+
+        <p className="label" style={{ color: "var(--t-upcoming)" }}>
+          {CHANGE_LABEL[group.changeType] ?? group.changeType}
+        </p>
+
+        {/* The subject of each change, named. Without this, several genuinely
+            different discoveries read as identical lines. */}
+        <ul className="feed-subjects">
+          {named.map((c) => (
+            <li key={c.id} className="feed-subject">
+              {c.offer ? (
+                c.offer_id ? (
+                  <Link href={`/evidence/${c.offer_id}`} className="mono">
+                    {c.offer.model_label}
+                  </Link>
+                ) : (
+                  <span className="mono">{c.offer.model_label}</span>
+                )
+              ) : (
+                <span className="mono">
+                  {FIELD_LABEL[c.field ?? ""] ?? c.field ?? "Event"}
+                </span>
+              )}
+              {c.change_type === "new" ? (
+                <span className="annot">
+                  added as {c.new_value?.replace(/_/g, " ")}
+                </span>
+              ) : c.field ? (
+                <span className="annot">
+                  {FIELD_LABEL[c.field] ?? c.field}:{" "}
+                  <span className="mono">{readable(c.old_value)}</span>
+                  {" → "}
+                  <span className="mono strong">{readable(c.new_value)}</span>
+                </span>
+              ) : null}
+            </li>
+          ))}
+          {rest > 0 ? (
+            <li className="annot feed-subject">
+              and {rest} more route{rest === 1 ? "" : "s"} at this provider
+            </li>
+          ) : null}
+        </ul>
+
+        {first.evidence ? <p className="annot">{first.evidence}</p> : null}
+      </div>
+
+      <div className="feed-source">
+        {first.offer_id ? (
+          <EvidenceLink offerId={first.offer_id} />
+        ) : first.source_url ? (
+          <a
+            href={first.source_url}
+            className="link-ev"
+            target="_blank"
+            rel="noopener noreferrer nofollow"
+          >
+            Source <span aria-hidden="true">→</span>
+          </a>
+        ) : null}
+      </div>
+    </li>
+  );
+}
+
+const readable = (v: string | null) => {
+  if (v === null || v === "") return "not stated";
+  if (v === "true") return "yes";
+  if (v === "false") return "no";
+  return v;
+};
 
 /**
  * The ended archive (§24, §16).
@@ -126,7 +269,7 @@ export function EndedArchive({
                 <p className="annot">Reason: {o.exhaustion_condition}</p>
               ) : null}
               <div style={{ marginTop: "0.5rem" }}>
-                <EvidenceLink href={o.official_evidence_url} />
+                <EvidenceLink offerId={o.id} />
               </div>
               {o.last_verified_at ? (
                 <p className="annot mono" style={{ marginTop: "0.5rem" }}>
@@ -172,11 +315,15 @@ export function SourceHealthPanel({
         </div>
         <div>
           <p className="label">Last sweep</p>
-          <p className="mono health-figure">{stampUTC(lastSweep) ?? "Not yet run"}</p>
+          <p className="mono health-figure">
+            {stampUTC(lastSweep) ?? "Not yet run"}
+          </p>
         </div>
         <div>
           <p className="label">Next sweep</p>
-          <p className="mono health-figure">{stampUTC(nextSweep) ?? "Not scheduled"}</p>
+          <p className="mono health-figure">
+            {stampUTC(nextSweep) ?? "Not scheduled"}
+          </p>
         </div>
         <div>
           <p className="label">Impaired</p>
@@ -199,5 +346,3 @@ export function SourceHealthPanel({
     </div>
   );
 }
-
-export type { Change };

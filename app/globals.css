@@ -486,10 +486,8 @@ body {
   to { transform: rotate(360deg); }
 }
 
-.radar-sweep {
-  transform-origin: 50% 50%;
-  animation: radar-sweep 6s linear infinite;
-}
+/* The interactive sweep lives further down with the rest of the radar styles.
+   Only the keyframes are declared here, so the two blocks cannot drift. */
 
 @keyframes radar-pulse {
   0%, 100% { opacity: 0.28; r: 3; }
@@ -703,7 +701,9 @@ body {
 
 .hero-dial { display: flex; justify-content: center; }
 
-.radar { width: 100%; max-width: 26rem; }
+.radar { width: 100%; max-width: 27rem; }
+
+.radar-stage { position: relative; }
 
 .radar-svg {
   width: 100%;
@@ -716,6 +716,97 @@ body {
   background-size: 25px 25px;
   border: 1px solid var(--t-rule);
   border-radius: 2px;
+  cursor: crosshair;
+}
+
+/* The sweep leans toward the pointer, so the dial feels connected to the hand
+   rather than animating beside it. Lean and spin are separate groups because a
+   CSS animation outranks an inline transform; combining them means the spin
+   always wins and the pointer does nothing. */
+.radar-lean {
+  transform-origin: 50% 50%;
+  transition: transform 0.7s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.radar-sweep {
+  transform-origin: 50% 50%;
+  animation: radar-sweep 7s linear infinite;
+}
+
+/* Only the hit areas take the pointer.
+   The dots and pulses are drawn after their hit area and would otherwise sit on
+   top of it, swallowing the hover the reader is making. Marking the visuals
+   inert keeps a single, predictable interactive layer. */
+.radar-hit {
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.radar-dot,
+.radar-pulse {
+  pointer-events: none;
+}
+
+.radar-dot {
+  transition: r 0.18s ease, fill-opacity 0.18s ease;
+}
+
+/* Upcoming events, drawn on the rim.
+   Previously a thick filled wedge floating inside the dial, which read as a
+   stray shape rather than a scheduled event. A thin arc flush with the outer
+   ring says "on the schedule" without competing with the contacts. */
+.radar-arc {
+  fill: none;
+  stroke: var(--t-upcoming);
+  stroke-width: 3;
+  stroke-linecap: butt;
+  opacity: 0.75;
+}
+
+.radar-arc-head {
+  fill: var(--t-upcoming);
+}
+
+.radar-legend-arc {
+  display: inline-block;
+  width: 0.875rem;
+  height: 3px;
+  margin-right: 0.375rem;
+  vertical-align: middle;
+  background: var(--t-upcoming);
+  opacity: 0.75;
+}
+
+/* The readout sits over the dial so the eye does not travel to a corner. */
+.radar-readout {
+  position: absolute;
+  left: 0.75rem;
+  bottom: 0.75rem;
+  right: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  background: color-mix(in oklab, var(--t-panel) 92%, transparent);
+  border: 1px solid var(--t-rule);
+  border-radius: 2px;
+  backdrop-filter: blur(6px);
+  animation: radar-in 0.16s ease-out;
+}
+
+@keyframes radar-in {
+  from { opacity: 0; transform: translateY(3px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.radar-readout-name {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--t-ink);
+}
+
+.radar-readout-meta {
+  font-family: var(--f-mono);
+  font-size: 0.75rem;
+  color: var(--t-ink-3);
+  margin-bottom: 0.375rem;
 }
 
 .radar-legend {
@@ -730,6 +821,8 @@ body {
   margin: 0.25rem 0 0;
   font-size: 0.8125rem;
   color: var(--t-ink);
+  display: flex;
+  align-items: center;
 }
 
 /* ---------- ticker ---------- */
@@ -884,8 +977,168 @@ body {
 }
 
 /* ==================================================================
+   the live table
+   ------------------------------------------------------------------
+   This table is the densest thing on the site and it was the worst
+   thing to read: eleven columns forced a horizontal drag to reach
+   the right-hand ones, and a long model name wrapped into a five-line
+   stack that tripled the row height.
+
+   Three changes, all of them about not making the reader work:
+   a sticky first column so scrolling sideways keeps its context,
+   a capped model cell so one long name cannot dominate a row, and
+   a width floor low enough that the common case fits without any
+   horizontal scrolling at all.
+   ================================================================== */
+
+.tbl-live { min-width: 52rem; }
+
+.tbl-live th,
+.tbl-live td { padding-inline: 0.75rem; }
+
+/* Column sizing.
+   The quota column is allowed to wrap, because a single figure like
+   "10 rpm · 500,000 tokens" was forcing the table 220px wider than its
+   container and pushing the last two columns out of sight. The model column
+   gets the most room because the model is what the row is about. */
+.tbl-live th:nth-child(1) { width: 8.5rem; }
+.tbl-live th:nth-child(2) { width: 32%; }
+.tbl-live th:nth-child(3) { width: 9.5rem; }
+.tbl-live th:nth-child(4) { width: 10.5rem; }
+.tbl-live th:nth-child(5) { width: 12.5rem; }
+.tbl-live th:nth-child(6) { width: 10rem; }
+.tbl-live th:nth-child(7) { width: 9rem; }
+.tbl-live th:nth-child(8) { width: 5.5rem; }
+
+/* Quota and compatibility wrap within their own cell rather than widening the
+   table. Everything else stays on one line. */
+.tbl-live .num { white-space: normal; }
+
+.tbl-live .chip { padding-inline: 0.3125rem; }
+
+/* Freshness reads as one line: a badge and a short relative time. Wrapping it
+   to three lines doubled the row height for information that is a glance. */
+.tbl-live .fresh {
+  display: flex;
+  align-items: baseline;
+  gap: 0.375rem;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.tbl-live .fresh .annot { font-size: 0.6875rem; }
+
+/* The first column stays put while the rest scrolls under it, so a row
+   never becomes an orphan fact with no provider attached. */
+.tbl-live .sticky-col {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--t-panel);
+  border-right: 1px solid var(--t-rule);
+}
+
+.tbl-live thead .sticky-col {
+  z-index: 2;
+  background: var(--t-raise);
+}
+
+/* A long model name is capped and truncated rather than allowed to wrap
+   freely. The full value stays available as a title attribute, and on the
+   evidence page. */
+.cell-model {
+  max-width: none;
+}
+
+.cell-model .key {
+  display: block;
+  overflow-wrap: anywhere;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.cell-tag {
+  display: inline-block;
+  margin-top: 0.25rem;
+  font-family: var(--f-annot);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--t-upcoming);
+}
+
+/* Requirements and compatibility are stacks of small tags, so they need
+   to be allowed to wrap within their own cell rather than pushing the
+   table wider. */
+.req,
+.compat {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+/* ==================================================================
    change feed
    ================================================================== */
+
+.feed-subject {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-block: 0.125rem;
+  flex-wrap: wrap;
+}
+
+.feed-subject .mono { overflow-wrap: anywhere; }
+
+.feed-subjects {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.feed-subject-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.375rem;
+}
+
+/* ==================================================================
+   evidence page
+   ================================================================== */
+
+.claim { padding: 1.25rem; }
+
+.claim-line {
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--t-ink-2);
+  margin-bottom: 1.25rem;
+  max-width: 60ch;
+}
+
+.evidence-source {
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  border: 1px solid var(--t-rule);
+  border-radius: 2px;
+  background: var(--t-raise);
+}
+
+.evidence-url {
+  margin-top: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--t-ink-2);
+  overflow-wrap: anywhere;
+}
+
 
 .feed { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; }
 
@@ -1051,16 +1304,29 @@ body {
   color: var(--t-ink-2);
 }
 
-/* A two-column definition list, used on provider and model pages. */
+/* A definition grid, used on provider, model and evidence pages.
+
+   Drawn with borders rather than a coloured background showing through 1px
+   gaps. The gap trick paints any unfilled grid track in the rule colour, so a
+   row with three items in a five-column grid left a visible grey block where
+   there was nothing to say. */
 .facts {
   display: grid;
-  gap: 1px;
-  background: var(--t-rule);
-  border: 1px solid var(--t-rule);
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
   margin: 1.5rem 0;
+  background: var(--t-panel);
+  border: 1px solid var(--t-rule);
+  border-radius: 2px;
+  overflow: hidden;
 }
-.facts > div { background: var(--t-panel); padding: 0.875rem 1rem; }
+
+.facts > div {
+  padding: 0.875rem 1rem;
+  border-right: 1px solid var(--t-rule-2);
+  border-bottom: 1px solid var(--t-rule-2);
+  margin: -0.5px;
+}
+
 .facts dd { margin: 0.375rem 0 0; font-size: 0.875rem; color: var(--t-ink); }
 
 .prose { max-width: 68ch; }

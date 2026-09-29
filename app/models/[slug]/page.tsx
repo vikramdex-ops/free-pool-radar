@@ -21,14 +21,14 @@ export async function generateMetadata({
   if (!model) return { title: "Model not found" };
   return {
     title: `${model.display_name} free API access`,
-    description: `Providers currently offering ${model.display_name} at no cost, with quotas, card requirements, API compatibility and last verification time â€” plus the providers that stopped offering it.`,
+    description: `Providers currently offering ${model.display_name} at no cost, with quotas, card requirements, API compatibility and last verification time — plus the providers that stopped offering it.`,
     alternates: { canonical: `/models/${model.slug}` },
   };
 }
 
 /**
- * Â§27. A model detail page answers two questions: who serves it for free right
- * now, and who used to. The second half matters as much as the first â€” a
+ * §27. A model detail page answers two questions: who serves it for free right
+ * now, and who used to. The second half matters as much as the first — a
  * provider that quietly dropped a model is exactly the kind of thing a reader
  * is looking for.
  */
@@ -60,9 +60,9 @@ export default async function ModelPage({
           <h1 className="page-title mono">{model.display_name}</h1>
           <p className="page-lede">
             {model.model_id}
-            {model.family ? ` Â· ${model.family} family` : ""}
+            {model.family ? ` · ${model.family} family` : ""}
             {model.context_window
-              ? ` Â· ${num(model.context_window)} token context`
+              ? ` · ${num(model.context_window)} token context`
               : ""}
           </p>
           <p className="annot" style={{ marginTop: "0.75rem" }}>
@@ -158,7 +158,7 @@ export default async function ModelPage({
                         </div>
                       </td>
                       <td>
-                        <EvidenceLink href={o.official_evidence_url} />
+                        <EvidenceLink offerId={o.id} />
                       </td>
                     </tr>
                   ))}
@@ -203,7 +203,7 @@ export default async function ModelPage({
                       <td className="num">{stampUTC(o.ended_at)}</td>
                       <td>{o.exhaustion_condition ?? NOT_STATED}</td>
                       <td>
-                        <EvidenceLink href={o.official_evidence_url} />
+                        <EvidenceLink offerId={o.id} />
                       </td>
                     </tr>
                   ))}

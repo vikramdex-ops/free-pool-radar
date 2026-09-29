@@ -163,6 +163,40 @@ export interface Change {
 
 export interface ChangeWithProvider extends Change {
   provider: { id: number; name: string; slug: string } | null;
+  /**
+   * The offer the change is about, so a feed can name the subject.
+   *
+   * Without this a row reads "offer: not stated → rotating_free_model" against
+   * a shared source URL, and several genuinely different discoveries look
+   * identical to a reader.
+   */
+  offer: {
+    id: number;
+    model_label: string;
+    model_id_text: string | null;
+  } | null;
+}
+
+/** One recorded observation. Raw payloads are withheld from public reads. */
+export interface Observation {
+  id: number;
+  provider_id: number | null;
+  offer_id: number | null;
+  event_id: number | null;
+  observed_at: string;
+  status: OfferStatus | null;
+  token_limit: number | null;
+  pool_size: number | null;
+  pool_remaining: number | null;
+  rpm: number | null;
+  rpd: number | null;
+  tpm: number | null;
+  tpd: number | null;
+  model_count: number | null;
+  source_url: string | null;
+  source_type: string | null;
+  response_hash: string | null;
+  verification_level: VerificationLevel | null;
 }
 
 export interface Source {
@@ -331,10 +365,18 @@ export const getEvent = (slug: string) =>
     q.select(EVENT_WITH_PROVIDER).eq("slug", slug),
   );
 
+/**
+ * The change feed selects the offer as well as the provider, because a change
+ * is only meaningful once its subject is named.
+ */
+export const CHANGE_WITH_SUBJECT =
+  "*, provider:providers(id,name,slug), " +
+  "offer:offers!changes_offer_id_fkey(id, model_label, model_id_text)";
+
 export const getChanges = (limit = 60) =>
   read<ChangeWithProvider>("changes", (q) =>
     q
-      .select("*, provider:providers(id,name,slug)")
+      .select(CHANGE_WITH_SUBJECT)
       .order("detected_at", { ascending: false })
       .limit(limit),
   );
@@ -342,7 +384,7 @@ export const getChanges = (limit = 60) =>
 export const getTimeline = (limit = 300) =>
   read<ChangeWithProvider>("changes", (q) =>
     q
-      .select("*, provider:providers(id,name,slug)")
+      .select(CHANGE_WITH_SUBJECT)
       .order("detected_at", { ascending: false })
       .limit(limit),
   );
@@ -373,6 +415,36 @@ export const getOffersForModelId = (modelIdText: string) =>
 export const getOffersForProvider = (slug: string) =>
   read<OfferWithProvider>("offers", (q) =>
     q.select(OFFER_WITH_PROVIDER).eq("provider.slug", slug).order("status"),
+  );
+
+/** A single offer with its provider, for the evidence page. */
+export const getOffer = (id: number) =>
+  readOne<OfferWithProvider>("offers", (q) => q.select(OFFER_WITH_PROVIDER).eq("id", id));
+
+/**
+ * The recorded observations for one offer.
+ *
+ * Observations are not publicly readable under RLS, so this returns nothing for
+ * an anonymous reader and the evidence page omits the section rather than
+ * showing an empty one.
+ */
+export const getObservationsForOffer = (offerId: number) =>
+  read<Observation>("observations", (q) =>
+    q
+      .select("*")
+      .eq("offer_id", offerId)
+      .order("observed_at", { ascending: false })
+      .limit(10),
+  );
+
+/** Every change recorded against one offer. */
+export const getChangesForOffer = (offerId: number) =>
+  read<ChangeWithProvider>("changes", (q) =>
+    q
+      .select(CHANGE_WITH_SUBJECT)
+      .eq("offer_id", offerId)
+      .order("detected_at", { ascending: false })
+      .limit(50),
   );
 
 /** Source health is internal (§51), so it is only read on the admin route. */

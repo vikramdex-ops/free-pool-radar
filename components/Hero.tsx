@@ -12,7 +12,8 @@ import {
   stampUTC,
   unitLabel,
 } from "@/lib/format";
-import { HeroStats, Radar } from "./Radar";
+import { HeroStats } from "./RadarStats";
+import { RadarFromData } from "./RadarFromData";
 import { StatusBadge, TypeBadge } from "./ui";
 
 /**
@@ -83,7 +84,12 @@ export function Hero({
           </div>
 
           <div className="hero-dial">
-            <Radar offers={offers} events={events} changes={changes} now={now} />
+            <RadarFromData
+              offers={offers}
+              events={events}
+              changes={changes}
+              now={now}
+            />
           </div>
         </div>
 

@@ -70,7 +70,7 @@ export function OfferLedger({
       </div>
 
       <div className="tbl-wrap ledger-table">
-        <table className="tbl">
+        <table className="tbl tbl-live">
           <caption>
             {hidden > 0
               ? `Showing ${shown.length} of ${offers.length} currently usable free routes`
@@ -78,17 +78,22 @@ export function OfferLedger({
           </caption>
           <thead>
             <tr>
-              {showProvider ? <th scope="col">Provider</th> : null}
+              {showProvider ? (
+                <th scope="col" className="sticky-col">
+                  Provider
+                </th>
+              ) : null}
               <th scope="col">Model or route</th>
               <th scope="col">Access</th>
-              <th scope="col">Status</th>
-              <th scope="col">Card</th>
-              <th scope="col">Subscription</th>
-              <th scope="col">Key</th>
+              {/* Card, subscription and key are one decision to make, not three
+                  separate facts to compare. Merging them takes the table from
+                  eleven columns to eight, which is the difference between
+                  reading it and dragging it sideways. */}
+              <th scope="col">Requirements</th>
               <th scope="col">Pool or quota</th>
               <th scope="col">Compatible</th>
               <th scope="col">Last verified</th>
-              <th scope="col">Source</th>
+              <th scope="col">Evidence</th>
             </tr>
           </thead>
           <tbody>
@@ -97,7 +102,7 @@ export function OfferLedger({
               return (
                 <tr key={o.id}>
                   {showProvider ? (
-                    <td>
+                    <td className="sticky-col">
                       {o.provider ? (
                         <Link
                           href={`/providers/${o.provider.slug}`}
@@ -110,35 +115,19 @@ export function OfferLedger({
                       )}
                     </td>
                   ) : null}
-                  <td>
-                    <span className="key mono">{o.model_label}</span>
+                  <td className="cell-model">
+                    <span className="key mono" title={o.model_label}>
+                      {o.model_label}
+                    </span>
+                    {o.status === "upcoming" ? (
+                      <span className="cell-tag">Upcoming</span>
+                    ) : null}
                   </td>
                   <td>
                     <TypeBadge type={o.offer_type} />
                   </td>
                   <td>
-                    <StatusBadge status={o.status} />
-                  </td>
-                  <td>
-                    <Condition
-                      ok={!o.card_required}
-                      when="No card"
-                      otherwise="Card required"
-                    />
-                  </td>
-                  <td>
-                    <Condition
-                      ok={!o.access_requires_subscription}
-                      when="No sub"
-                      otherwise="Sub required"
-                    />
-                  </td>
-                  <td>
-                    <Condition
-                      ok={o.keyless}
-                      when="Keyless"
-                      otherwise="Key required"
-                    />
+                    <Requirements offer={o} />
                   </td>
                   <td className="num">
                     {p
@@ -146,7 +135,7 @@ export function OfferLedger({
                       : (quota(o) ?? NOT_STATED)}
                   </td>
                   <td>
-                    <span className="inline-flex" style={{ gap: "0.25rem" }}>
+                    <span className="compat">
                       {o.compatibility_openai ? (
                         <span className="chip">OpenAI</span>
                       ) : null}
@@ -165,7 +154,7 @@ export function OfferLedger({
                     />
                   </td>
                   <td>
-                    <EvidenceLink href={o.official_evidence_url} />
+                    <EvidenceLink offerId={o.id} />
                   </td>
                 </tr>
               );
@@ -184,6 +173,42 @@ export function OfferLedger({
           .
         </p>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * Card, subscription and key in one cell.
+ *
+ * These were three separate columns, which read as three separate facts when
+ * they are one decision: can I actually use this without paying or signing up?
+ * The only combinations worth drawing attention to are the ones that cost the
+ * reader something, so those are marked and the common case is stated once.
+ */
+function Requirements({ offer }: { offer: OfferWithProvider }) {
+  const blockers: string[] = [];
+  if (offer.card_required) blockers.push("card");
+  if (offer.access_requires_subscription) blockers.push("subscription");
+  if (offer.payment_required && !offer.card_required) blockers.push("payment");
+
+  return (
+    <div className="req">
+      {blockers.length > 0 ? (
+        <span className="chip chip-no">
+          <span className="dot" aria-hidden="true" />
+          {blockers.join(" + ")} required
+        </span>
+      ) : (
+        <span className="chip chip-yes">
+          <span className="dot" aria-hidden="true" />
+          No card, no sub
+        </span>
+      )}
+      {offer.keyless ? (
+        <span className="chip chip-yes">Keyless</span>
+      ) : (
+        <span className="chip">Key required</span>
+      )}
     </div>
   );
 }
@@ -210,17 +235,7 @@ function OfferCard({ offer, now }: { offer: OfferWithProvider; now: number }) {
 
       <div className="offer-card-chips">
         <TypeBadge type={offer.offer_type} />
-        <Condition
-          ok={!offer.card_required}
-          when="No card"
-          otherwise="Card required"
-        />
-        <Condition
-          ok={!offer.access_requires_subscription}
-          when="No subscription"
-          otherwise="Subscription"
-        />
-        {offer.keyless ? <span className="chip chip-yes">Keyless</span> : null}
+        <Requirements offer={offer} />
       </div>
 
       {p ? (

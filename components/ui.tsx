@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 import type {
   Freshness,
   OfferStatus,
@@ -100,7 +101,7 @@ export function FreshnessIndicator({
   ago: string | null;
 }) {
   return (
-    <span className="inline-flex items-center gap-1.5">
+    <span className="fresh">
       <span className={`badge ${FRESHNESS_CLASS[freshness]}`}>
         {FRESHNESS_LABEL[freshness]}
       </span>
@@ -219,17 +220,35 @@ export function Countdown({
 /* evidence (§60)                                                      */
 /* ------------------------------------------------------------------ */
 
-/** An outbound link that always says what it points at, so a third-party URL
- *  is never disguised as an official one. */
+/**
+ * A link to the evidence page for an offer, not to the source URL.
+ *
+ * Many source URLs are machine endpoints, and sending a reader to a raw JSON
+ * catalogue to confirm one rate limit is not evidence — it is a chore with no
+ * way to tell which field matters. The evidence page states the claim, shows the
+ * extracted figure with its provenance, and offers the raw URL last.
+ *
+ * `href` remains for the places that genuinely want the source: provider
+ * homepages and provider/event pages, where there is no single claim to show.
+ */
 export function EvidenceLink({
+  offerId,
   href,
-  kind = "Official source",
+  kind = "Evidence",
 }: {
-  href: string | null | undefined;
+  offerId?: number;
+  href?: string | null;
   kind?: string;
 }) {
+  if (offerId !== undefined) {
+    return (
+      <Link href={`/evidence/${offerId}`} className="link-ev">
+        {kind} <span aria-hidden="true">→</span>
+      </Link>
+    );
+  }
   if (!href) {
-    return <span className="annot">No official source published</span>;
+    return <span className="annot">No source published</span>;
   }
   return (
     <a

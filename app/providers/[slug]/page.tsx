@@ -21,7 +21,7 @@ import {
 
 export const revalidate = 300;
 
-/** Â§40: metadata is generated from the stored record, not hard-coded. */
+/** §40: metadata is generated from the stored record, not hard-coded. */
 export async function generateMetadata({
   params,
 }: {
@@ -40,7 +40,7 @@ export async function generateMetadata({
   ].filter(Boolean);
 
   return {
-    title: parts.join(" â€” "),
+    title: parts.join(" — "),
     description:
       provider.description ??
       `Current free AI API access from ${provider.name}: quotas, card and subscription requirements, rate limits, verification time and the history of what has been withdrawn.`,
@@ -192,7 +192,7 @@ export default async function ProviderPage({
                       <td className="num">{stampUTC(o.ended_at)}</td>
                       <td>{o.exhaustion_condition ?? NOT_STATED}</td>
                       <td>
-                        <EvidenceLink href={o.official_evidence_url} />
+                            <EvidenceLink offerId={o.id} />
                       </td>
                     </tr>
                   ))}
@@ -233,7 +233,7 @@ export default async function ProviderPage({
                     <p className="annot">
                       {c.field ? `${c.field.replace(/_/g, " ")}: ` : ""}
                       <span className="mono">{c.old_value ?? "not stated"}</span>
-                      {" â†’ "}
+                      {" → "}
                       <span className="mono strong">{c.new_value ?? "not stated"}</span>
                     </p>
                     {c.evidence ? <p className="annot">{c.evidence}</p> : null}
@@ -295,7 +295,7 @@ function cardSummary(offers: { card_required: boolean }[]): string {
   const needs = offers.filter((o) => o.card_required).length;
   if (needs === 0) return "No card required";
   if (needs === offers.length) return "Card required";
-  return `Mixed â€” ${offers.length - needs} of ${offers.length} need no card`;
+  return `Mixed — ${offers.length - needs} of ${offers.length} need no card`;
 }
 
 function subSummary(offers: { access_requires_subscription: boolean }[]): string {
@@ -303,7 +303,7 @@ function subSummary(offers: { access_requires_subscription: boolean }[]): string
   const needs = offers.filter((o) => o.access_requires_subscription).length;
   if (needs === 0) return "No subscription required";
   if (needs === offers.length) return "Subscription required";
-  return `Mixed â€” ${offers.length - needs} of ${offers.length} need none`;
+  return `Mixed — ${offers.length - needs} of ${offers.length} need none`;
 }
 
 function poolSummary(

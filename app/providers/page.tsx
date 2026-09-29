@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/providers" },
 };
 
-/** Â§26. The index of provider pages. */
+/** §26. The index of provider pages. */
 export default async function ProvidersPage() {
   const providers = await getProviders();
   return (

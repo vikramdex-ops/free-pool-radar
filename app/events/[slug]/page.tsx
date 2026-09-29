@@ -24,7 +24,7 @@ export async function generateMetadata({
   const event = await getEvent(slug);
   if (!event) return { title: "Event not found" };
   const size = event.pool_size
-    ? ` â€” ${compact(event.pool_size)} ${unitLabel(event.unit)}`
+    ? ` — ${compact(event.pool_size)} ${unitLabel(event.unit)}`
     : "";
   return {
     title: `${event.provider?.name ?? "Free"} AI API pool${size}`,
@@ -35,7 +35,7 @@ export async function generateMetadata({
   };
 }
 
-/** Â§40, Â§7.4. One indexable page per pool or event. */
+/** §40, §7.4. One indexable page per pool or event. */
 export default async function EventPage({
   params,
 }: {

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { EmptyState, EvidenceLink } from "@/components/ui";
 import { getTimeline } from "@/lib/db";
 import { CHANGE_LABEL, FIELD_LABEL, ago, stampUTC } from "@/lib/format";
@@ -12,7 +13,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/timeline" },
 };
 
-/** Â§28. A global, filterable history of everything that moved. */
+/** §28. A global, filterable history of everything that moved. */
 export default async function TimelinePage() {
   const now = Date.now();
   const changes = await getTimeline(300);
@@ -20,7 +21,7 @@ export default async function TimelinePage() {
   // Grouped by UTC day, so the timeline reads as a log rather than a feed.
   const byDay = new Map<string, typeof changes>();
   for (const c of changes) {
-    const day = (stampUTC(c.detected_at) ?? "undated").split(" Â· ")[0];
+    const day = (stampUTC(c.detected_at) ?? "undated").split(" · ")[0];
     const list = byDay.get(day) ?? [];
     list.push(c);
     byDay.set(day, list);
@@ -55,7 +56,7 @@ export default async function TimelinePage() {
                     <li key={c.id} className="panel feed-row">
                       <div className="feed-when">
                         <p className="mono feed-stamp">
-                          {(stampUTC(c.detected_at) ?? "").split(" Â· ")[1] ?? ""}
+                          {(stampUTC(c.detected_at) ?? "").split(" · ")[1] ?? ""}
                         </p>
                         <p className="annot mono">{ago(c.detected_at, now)}</p>
                       </div>
@@ -65,23 +66,49 @@ export default async function TimelinePage() {
                         </p>
                         <p className="strong">
                           {c.provider ? (
-                            <a href={`/providers/${c.provider.slug}`} className="link">
+                            <Link href={`/providers/${c.provider.slug}`} className="link">
                               {c.provider.name}
-                            </a>
+                            </Link>
                           ) : (
                             "Unattributed"
                           )}
                         </p>
-                        {c.field ? (
-                          <p className="annot mono">
+                        {/* Name the subject, or several different events read as
+                            the same line. */}
+                        {c.offer ? (
+                          <p className="annot mono">{c.offer.model_label}</p>
+                        ) : null}
+                        {c.field && c.change_type !== "new" ? (
+                          <p className="annot">
                             {FIELD_LABEL[c.field] ?? c.field}:{" "}
-                            {c.old_value ?? "not stated"} â†’ {c.new_value ?? "not stated"}
+                            <span className="mono">
+                              {c.old_value ?? "not stated"}
+                            </span>{" "}
+                            →{" "}
+                            <span className="mono strong">
+                              {c.new_value ?? "not stated"}
+                            </span>
+                          </p>
+                        ) : c.change_type === "new" ? (
+                          <p className="annot">
+                            added as {c.new_value?.replace(/_/g, " ")}
                           </p>
                         ) : null}
                         {c.evidence ? <p className="annot">{c.evidence}</p> : null}
                       </div>
                       <div className="feed-source">
-                        <EvidenceLink href={c.source_url} kind="Evidence" />
+                        {c.offer_id ? (
+                          <EvidenceLink offerId={c.offer_id} />
+                        ) : c.source_url ? (
+                          <a
+                            href={c.source_url}
+                            className="link-ev"
+                            target="_blank"
+                            rel="noopener noreferrer nofollow"
+                          >
+                            Source <span aria-hidden="true">→</span>
+                          </a>
+                        ) : null}
                       </div>
                     </li>
                   ))}

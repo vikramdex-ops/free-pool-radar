@@ -15,12 +15,12 @@ export function adminEnabled(): boolean {
 }
 
 /**
- * Â§50. Source health.
+ * §50. Source health.
  *
  * Reachable without a token only when one is not configured, which is the local
  * development case. In production the route refuses to render rather than
  * relying on a hidden URL, a query parameter, or a password in the frontend
- * (Â§80) â€” those are not security controls.
+ * (§80) — those are not security controls.
  */
 export default async function AdminPage() {
   if (process.env.NODE_ENV === "production" && !adminEnabled()) {
@@ -76,7 +76,7 @@ export default async function AdminPage() {
               <dd className="mono">
                 {status?.last_duration_ms != null
                   ? `${(status.last_duration_ms / 1000).toFixed(1)}s`
-                  : "â€”"}
+                  : "—"}
               </dd>
             </div>
             <div>
@@ -131,9 +131,9 @@ export default async function AdminPage() {
                           {s.health.toUpperCase()}
                         </span>
                       </td>
-                      <td className="num">{s.last_status_code ?? "â€”"}</td>
+                      <td className="num">{s.last_status_code ?? "—"}</td>
                       <td className="num">
-                        {s.last_latency_ms != null ? `${s.last_latency_ms}ms` : "â€”"}
+                        {s.last_latency_ms != null ? `${s.last_latency_ms}ms` : "—"}
                       </td>
                       <td className="num">{stampUTC(s.last_ok_at) ?? "Never"}</td>
                       <td className="mono">{s.parser_key}</td>
@@ -149,7 +149,7 @@ export default async function AdminPage() {
                             target="_blank"
                             rel="noopener noreferrer nofollow"
                           >
-                            Source <span aria-hidden="true">â†’</span>
+                            Source <span aria-hidden="true">→</span>
                           </a>
                         )}
                       </td>

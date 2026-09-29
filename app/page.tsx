@@ -2,8 +2,8 @@
  * Landing page.
  *
  * Every figure here is counted from the database on each request, never
- * hard-coded (Â§18). The page revalidates on an interval so a data change
- * reaches visitors without a deployment (Â§76), while the data itself is
+ * hard-coded (§18). The page revalidates on an interval so a data change
+ * reaches visitors without a deployment (§76), while the data itself is
  * written by the monitoring pipeline, not by this file.
  */
 
@@ -27,9 +27,9 @@ import {
 export const revalidate = 300;
 
 export const metadata: Metadata = {
-  title: "Free Pool Radar â€” every free AI inference pool, tracked live",
+  title: "Free Pool Radar — every free AI inference pool, tracked live",
   description:
-    "Every provider giving away AI inference at $0 â€” shared token pools, free model endpoints, sponsored access and keyless routes â€” with exact quotas, card requirements, verification times and the history of what has been withdrawn.",
+    "Every provider giving away AI inference at $0 — shared token pools, free model endpoints, sponsored access and keyless routes — with exact quotas, card requirements, verification times and the history of what has been withdrawn.",
   alternates: { canonical: "/" },
 };
 
@@ -173,7 +173,7 @@ export default async function Page() {
               <h2 className="sect-title">Provider index</h2>
               <Link href="/providers" className="link-ev">
                 All providers
-                <span aria-hidden="true"> â†’</span>
+                <span aria-hidden="true"> →</span>
               </Link>
             </div>
             <Registry providers={providers} />

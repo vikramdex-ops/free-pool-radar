@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/methodology" },
 };
 
-/** Â§33, Â§34, Â§35. The full statement of how the product decides. */
+/** §33, §34, §35. The full statement of how the product decides. */
 export default function MethodologyPage() {
   return (
     <>
