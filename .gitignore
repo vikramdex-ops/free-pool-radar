@@ -31,3 +31,6 @@ yarn-error.log*
 # review artefacts and scratch output
 .review
 scripts/tmp-*.sql
+
+# Live credentials. Never commit.
+CREDENTIALS.local.md
