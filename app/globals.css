@@ -555,8 +555,44 @@ body {
   overflow-x: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 .nav-list::-webkit-scrollbar { display: none; }
+
+/* The scroll affordance (PRI-001). The strip above hides its scrollbar, so
+ * without a cue the clipped destinations are undiscoverable. The fade uses
+ * the neutral sheet surface, never a state colour (invariant 5: green live,
+ * amber upcoming/change, red ended/problem, grey stale). Shown only below
+ * desktop widths, where the eight links can overflow; on wide screens every
+ * destination is visible and there is nothing to hint at. */
+.nav-scroll {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.nav-scroll::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 2.5rem;
+  pointer-events: none;
+  background: linear-gradient(to left, var(--t-sheet) 30%, transparent);
+}
+@media (min-width: 1100px) {
+  .nav-scroll::after { display: none; }
+}
+
+/* A scroll container with no focus indicator is not evidently operable by
+ * keyboard (WCAG 2.1.1). The outline uses the neutral info tone, as the
+ * nav links themselves do on hover. */
+.nav-list:focus-visible {
+  outline: 2px solid var(--t-info);
+  outline-offset: 2px;
+}
 
 .nav-link {
   font-family: var(--f-annot);
