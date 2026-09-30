@@ -36,6 +36,26 @@ create index if not exists idx_login_attempts_ip_time
   on admin_login_attempts (ip, attempted_at desc);
 
 -- ------------------------------------------------------------------
+-- Row Level Security. This table holds the IP addresses and timing of
+-- admin login attempts, so it must never be readable through PostgREST
+-- with the anonymous key: an attacker could otherwise enumerate exactly
+-- when and from where the admin account is being targeted. RLS is
+-- enabled and both anon and authenticated are denied select explicitly
+-- (USING (false)); all access goes through the SECURITY DEFINER RPCs
+-- below, called with the secret key, and service_role bypasses RLS.
+-- ------------------------------------------------------------------
+
+alter table admin_login_attempts enable row level security;
+
+drop policy if exists deny_anon_read_login_attempts on admin_login_attempts;
+create policy deny_anon_read_login_attempts on admin_login_attempts
+  for select to anon using (false);
+
+drop policy if exists deny_authenticated_read_login_attempts on admin_login_attempts;
+create policy deny_authenticated_read_login_attempts on admin_login_attempts
+  for select to authenticated using (false);
+
+-- ------------------------------------------------------------------
 -- Record one attempt. Prunes rows older than 24h so the table stays
 -- small without a scheduled job.
 -- ------------------------------------------------------------------

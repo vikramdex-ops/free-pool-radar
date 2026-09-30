@@ -58,6 +58,14 @@ try {
   const sql = fs.readFileSync(mig, "utf8");
   assert.ok(sql.includes("admin_login_attempts"), "migration creates the table");
   assert.ok(
+    sql.includes("enable row level security"),
+    "migration must enable RLS: the table holds admin-targeting IPs and timing",
+  );
+  assert.ok(
+    /using\s*\(\s*false\s*\)/i.test(sql),
+    "migration must explicitly deny anon/authenticated select",
+  );
+  assert.ok(
     sql.trimEnd().endsWith("select pg_notify('pgrst', 'reload schema');"),
     "migration must end with pg_notify reload (gotcha 5.1)",
   );
