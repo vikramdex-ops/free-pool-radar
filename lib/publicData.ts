@@ -131,7 +131,13 @@ export function envelope(
 }
 
 /** A failed read is never rendered as an empty result (LED-001, invariant 9).
- *  API consumers get an explicit error status rather than a 200 with []. */
+ *  API consumers get an explicit error status rather than a 200 with [].
+ *
+ *  This 503 is safe to return from a revalidate-cached route: Vercel treats
+ *  any non-2xx/3xx/404/410 status as a failed revalidation, keeps serving
+ *  the existing cached content, and retries in 30s — so a transient outage
+ *  never persists as an error page, and recovery needs no deploy. Observed
+ *  locally too: failed revalidations keep serving stale good data. */
 export function readErrorResponse(what: string): NextResponse {
   return NextResponse.json(
     {
