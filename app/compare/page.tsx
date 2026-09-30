@@ -9,7 +9,7 @@ export const revalidate = 300;
 export const metadata: Metadata = {
   title: "Compare providers",
   description:
-    "Side-by-side factual comparison of free AI inference providers: card and subscription requirements, API key need, OpenAI and Anthropic compatibility, model counts, rate limits and pool sizes. No ranking.",
+    "Factual side-by-side of free AI providers: card rules, API keys, compatibility, model counts, limits and pool sizes. No ranking.",
   alternates: { canonical: "/compare" },
 };
 

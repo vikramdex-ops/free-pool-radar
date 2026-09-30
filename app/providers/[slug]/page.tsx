@@ -8,6 +8,7 @@ import {
   getOffersForProvider,
   getProvider,
 } from "@/lib/db";
+import { truncateDescription } from "@/lib/metadata";
 import {
   NOT_STATED,
   ago,
@@ -43,9 +44,10 @@ export async function generateMetadata({
 
   return {
     title: parts.join(" — "),
-    description:
+    description: truncateDescription(
       provider.description ??
-      `Current free AI API access from ${provider.name}: quotas, card and subscription requirements, rate limits, verification time and the history of what has been withdrawn.`,
+        `Free AI API access from ${provider.name}: quotas, card rules, rate limits, verification time and withdrawn history.`,
+    ),
     alternates: { canonical: `/providers/${provider.slug}` },
   };
 }

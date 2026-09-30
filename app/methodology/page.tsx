@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Methodology",
   description:
-    "How Free Pool Radar verifies free AI access: the evidence hierarchy, the rules for what counts as a source, how conflicts are handled, and why a failed source is never reported as a withdrawn offer.",
+    "How we verify free AI access: evidence hierarchy, source rules, conflict handling, and why a failed source never ends offers.",
   alternates: { canonical: "/methodology" },
 };
 

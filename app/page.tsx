@@ -30,7 +30,7 @@ export const revalidate = 300;
 export const metadata: Metadata = {
   title: "Free Pool Radar — every free AI inference pool, tracked live",
   description:
-    "Every provider giving away AI inference at $0 — shared token pools, free model endpoints, sponsored access and keyless routes — with exact quotas, card requirements, verification times and the history of what has been withdrawn.",
+    "Every $0 AI inference route: shared pools, free endpoints, sponsored access and keyless routes, with quotas and verification times.",
   alternates: { canonical: "/" },
 };
 

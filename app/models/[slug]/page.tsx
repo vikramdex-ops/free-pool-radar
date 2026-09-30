@@ -22,7 +22,7 @@ export async function generateMetadata({
   if (!model) return { title: "Model not found" };
   return {
     title: `${model.display_name} free API access`,
-    description: `Providers currently offering ${model.display_name} at no cost, with quotas, card requirements, API compatibility and last verification time — plus the providers that stopped offering it.`,
+    description: `Who offers ${model.display_name} free now: quotas, card rules, API compatibility, verification time, plus who stopped.`,
     alternates: { canonical: `/models/${model.slug}` },
   };
 }
