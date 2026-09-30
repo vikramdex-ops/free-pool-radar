@@ -142,35 +142,50 @@ export function readErrorResponse(what: string): NextResponse {
   );
 }
 
-const statusMeta = async () => {
-  const { data: s } = await getStatus();
-  return s
+type StatusRow = NonNullable<Awaited<ReturnType<typeof getStatus>>["data"]>;
+
+const statusMetaFrom = (s: StatusRow | null) =>
+  s
     ? {
         sources: { total: s.sources_total, ok: s.sources_ok, impaired: s.sources_unhealthy },
         lastSweepAt: iso(s.last_sweep_at),
         nextSweepAt: iso(s.next_sweep_at),
       }
     : {};
-};
 
 /* ------------------------------------------------------------------ */
 /* shared query builders                                               */
 /* ------------------------------------------------------------------ */
 
 export async function livePayload() {
-  const { data: offers, error: offersError } = await getLiveOffers();
+  // The reads are independent, so they go out together: on a serverless
+  // function each Supabase roundtrip costs real network time, and sequential
+  // awaits make them additive (PUL-006). Order is unaffected — each query
+  // keeps its own ORDER BY and the arrays are never interleaved. Every read
+  // is checked, so a failure surfaces as 503 instead of an empty table.
+  const [{ data: offers, error: offersError }, { data: status, error: statusError }] =
+    await Promise.all([getLiveOffers(), getStatus()]);
   if (offersError) return readErrorResponse("live offers");
+  if (statusError) return readErrorResponse("source status");
   return envelope(offers.map(serialiseOffer), {
     count: offers.length,
-    ...(await statusMeta()),
+    ...statusMetaFrom(status),
   });
 }
 
 export async function upcomingPayload() {
-  const [{ data: offers, error: offersError }, { data: events, error: eventsError }] =
-    await Promise.all([getUpcomingOffers(), getEvents()]);
+  // Same as above: three independent reads, one network wait instead of
+  // three. Offers and events stay in separate arrays in fixed positions,
+  // so no two records with the same sort key can interleave — invariant 1
+  // (never rank, missing values last) is preserved by construction.
+  const [
+    { data: offers, error: offersError },
+    { data: events, error: eventsError },
+    { data: status, error: statusError },
+  ] = await Promise.all([getUpcomingOffers(), getEvents(), getStatus()]);
   if (offersError) return readErrorResponse("upcoming offers");
   if (eventsError) return readErrorResponse("events");
+  if (statusError) return readErrorResponse("source status");
   return envelope(
     {
       offers: offers.map(serialiseOffer),
@@ -193,7 +208,7 @@ export async function upcomingPayload() {
         lastVerifiedAt: iso(e.last_verified_at),
       })),
     },
-    { ...(await statusMeta()) },
+    { count: offers.length, ...statusMetaFrom(status) },
   );
 }
 
