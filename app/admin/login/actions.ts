@@ -9,6 +9,11 @@ import {
   isAdminConfigured,
   verifyPassword,
 } from "@/lib/auth";
+import {
+  getClientIp,
+  isLoginBlocked,
+  recordLoginAttempt,
+} from "@/lib/login-throttle";
 
 /**
  * Signs an admin in.
@@ -25,12 +30,19 @@ import {
 export async function signIn(formData: FormData): Promise<void> {
   const password = formData.get("password");
   const next = formData.get("next");
+  const ip = await getClientIp();
+
+  if (await isLoginBlocked(ip)) {
+    redirect(failUrl(next, "throttled"));
+    return;
+  }
 
   // redirect() throws, so these calls never come back. The explicit `return`s
   // are what let the compiler know that: a `never`-typed arrow const is not
   // enough for control-flow narrowing, and without them `password` stays typed
   // as a FormDataEntryValue all the way down.
   if (typeof password !== "string" || password.length === 0) {
+    await recordLoginAttempt(ip, false);
     redirect(failUrl(next, "wrong"));
     return;
   }
@@ -46,9 +58,12 @@ export async function signIn(formData: FormData): Promise<void> {
   if (!(await verifyPassword(password))) {
     // The same code as an empty submission, so the form cannot be used to probe
     // whether a guess was close to anything.
+    await recordLoginAttempt(ip, false);
     redirect(failUrl(next, "wrong"));
     return;
   }
+
+  await recordLoginAttempt(ip, true);
 
   const store = await cookies();
   store.set(ADMIN_COOKIE, await createSessionToken(), ADMIN_COOKIE_OPTIONS);
@@ -62,7 +77,10 @@ export async function signIn(formData: FormData): Promise<void> {
  * the server wants to say about itself is echoed into a URL that access logs
  * and referrer headers tend to keep.
  */
-function failUrl(next: FormDataEntryValue | null, code: "wrong" | "unconfigured"): string {
+function failUrl(
+  next: FormDataEntryValue | null,
+  code: "wrong" | "unconfigured" | "throttled",
+): string {
   const target = safeNext(next);
   // /admin is the default, so there is nothing worth preserving in that case.
   const back = target === "/admin" ? "" : `&next=${encodeURIComponent(target)}`;

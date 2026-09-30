@@ -68,7 +68,9 @@ function SignInForm({ next, error }: { next: string; error?: string }) {
         <p className="form-error" role="alert">
           {error === "unconfigured"
             ? "Admin sign-in is not configured on this deployment."
-            : "That password is not correct."}
+            : error === "throttled"
+              ? "Too many failed attempts. Try again in a few minutes."
+              : "That password is not correct."}
         </p>
       ) : null}
       <label className="label" htmlFor="password">
