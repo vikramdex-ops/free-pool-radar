@@ -229,6 +229,26 @@ discovery candidates, 12 sources.
 
 ## 7. Outstanding work
 
+### Repo state: one branch, nothing in flight
+
+`origin/main` is the only remote branch. Every working branch has been deleted
+after its content was verified present in `main`, so no stale branch is left
+holding a pre-batch snapshot. Start new work with
+`git worktree add C:\Temp\opencode\wt-<agent> -b <branch> origin/main`.
+
+### Register housekeeping needed (could not be done here)
+
+Two findings are shipped but still sit in the shared findings register as
+`approved`, so a routine will keep re-picking them:
+
+- **Licensing** (MIT code + CC0 dataset). Shipped in `40cf88e`. `LICENSE` is
+  verbatim MIT with `vikramdex-ops` as the copyright holder, `DATA-LICENSE` is the
+  full 109-line CC0 1.0 legal code, `NOTICE.md` carries the trademark and
+  non-endorsement notice, and `package.json` declares `"license": "MIT"`. Mark
+  this **complete**, not `approved`.
+- **VIS-012** (universal filters as a standing market fact). Shipped in `f0bd005`.
+  Mark **complete**.
+
 ### Every PR is closed — do not reopen #7, #11 or #13
 
 All fourteen PRs are accounted for: eleven merged, three closed with a note
