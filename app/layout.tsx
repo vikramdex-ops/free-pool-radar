@@ -31,8 +31,19 @@ export const metadata: Metadata = {
     description:
       "Every free AI inference pool. Every disappearing quota. One live radar.",
     type: "website",
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "Free Pool Radar social preview",
+      },
+    ],
   },
-  twitter: { card: "summary_large_image" },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/opengraph-image"],
+  },
   robots: { index: true, follow: true },
 };
 
