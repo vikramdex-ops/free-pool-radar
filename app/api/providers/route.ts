@@ -1,12 +1,13 @@
 import { getProviders } from "@/lib/db";
-import { envelope } from "@/lib/publicData";
+import { envelope, readErrorResponse } from "@/lib/publicData";
 import { iso, stampUTC } from "@/lib/format";
 
 export const revalidate = 300;
 
 /** GET /api/providers — the provider registry (§37). */
 export async function GET() {
-  const providers = await getProviders();
+  const { data: providers, error: providersError } = await getProviders();
+  if (providersError) return readErrorResponse("providers");
   return envelope(
     providers.map((p) => ({
       id: p.id,

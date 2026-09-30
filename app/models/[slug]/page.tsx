@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { EmptyState, EvidenceLink, StatusBadge } from "@/components/ui";
+import { EmptyState, EvidenceLink, ReadError, StatusBadge } from "@/components/ui";
 import {
   getModel,
   getModels,
@@ -17,7 +17,8 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const model = await getModel(slug);
+  const { data: model, error: modelError } = await getModel(slug);
+  if (modelError) return { title: "Model unavailable" };
   if (!model) return { title: "Model not found" };
   return {
     title: `${model.display_name} free API access`,
@@ -39,12 +40,21 @@ export default async function ModelPage({
 }) {
   const { slug } = await params;
   const now = Date.now();
-  const model = await getModel(slug);
+  const { data: model, error: modelError } = await getModel(slug);
+  if (modelError) {
+    return (
+      <main id="main" className="wrap">
+        <div className="sect">
+          <ReadError what={`Model ${slug}`} />
+        </div>
+      </main>
+    );
+  }
   if (!model) notFound();
 
   // Offers are matched on the provider-local model id, so the same string can
   // exist at several providers with different terms.
-  const offers = await getOffersForModelId(model.model_id);
+  const { data: offers, error: offersError } = await getOffersForModelId(model.model_id);
   const live = offers.filter(
     (o) => o.status === "live" || o.status === "changed" || o.status === "ending",
   );
@@ -71,15 +81,21 @@ export default async function ModelPage({
           </p>
         </header>
 
-        <section className="sect" style={{ paddingTop: 0 }}>
-          <div className="sect-head">
-            <h2 className="sect-title">Free right now</h2>
-            <p className="sect-note">
-              Providers currently serving this model at no cost.
-            </p>
-          </div>
+        {offersError ? (
+          <section className="sect" style={{ paddingTop: 0 }}>
+            <ReadError what={`${model.display_name} free routes`} />
+          </section>
+        ) : (
+          <>
+            <section className="sect" style={{ paddingTop: 0 }}>
+              <div className="sect-head">
+                <h2 className="sect-title">Free right now</h2>
+                <p className="sect-note">
+                  Providers currently serving this model at no cost.
+                </p>
+              </div>
 
-          {live.length === 0 ? (
+              {live.length === 0 ? (
             <EmptyState title="No current free access">
               No provider is currently offering {model.display_name} at $0
               through a route we monitor. That is a statement about our tracked
@@ -212,6 +228,8 @@ export default async function ModelPage({
             </div>
           </section>
         ) : null}
+          </>
+        )}
       </main>
     </>
   );
@@ -219,6 +237,6 @@ export default async function ModelPage({
 
 /** The model index is its own page so the slug list stays linkable. */
 export async function generateStaticParams() {
-  const models = await getModels(200);
+  const { data: models } = await getModels(200);
   return models.map((m) => ({ slug: m.slug }));
 }

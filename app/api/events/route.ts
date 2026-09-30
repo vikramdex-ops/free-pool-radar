@@ -1,12 +1,13 @@
 import { getEvents } from "@/lib/db";
-import { envelope } from "@/lib/publicData";
+import { envelope, readErrorResponse } from "@/lib/publicData";
 import { iso, stampUTC } from "@/lib/format";
 
 export const revalidate = 300;
 
 /** GET /api/events — shared pools and promotional events (§37, §7.4). */
 export async function GET() {
-  const events = await getEvents();
+  const { data: events, error: eventsError } = await getEvents();
+  if (eventsError) return readErrorResponse("events");
   return envelope(
     events.map((e) => ({
       id: e.id,

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { EmptyState } from "@/components/ui";
+import { EmptyState, ReadError } from "@/components/ui";
 import { getModels } from "@/lib/db";
 import { num } from "@/lib/format";
 
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
  * instantly is worth more here than trimming the payload.
  */
 export default async function ModelsPage() {
-  const models = await getModels();
+  const { data: models, error: modelsError } = await getModels();
   return (
     <>
       <main id="main" className="wrap">
@@ -36,7 +36,9 @@ export default async function ModelsPage() {
         </header>
 
         <div className="sect" style={{ paddingTop: 0 }}>
-          {models.length === 0 ? (
+          {modelsError ? (
+            <ReadError what="Model index" />
+          ) : models.length === 0 ? (
             <EmptyState title="No models recorded">
               No model has been recorded yet. The first monitoring sweep fills
               this index from provider catalogues.

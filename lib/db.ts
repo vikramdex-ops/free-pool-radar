@@ -281,28 +281,44 @@ export function db(): { from: (t: string) => Query } | null {
 export const isConfigured = () => db() !== null;
 
 /**
- * Runs a query and returns rows, or an empty array when the project is not
- * configured or the read failed.
+ * A read that tells the truth about failure (LED-001).
  *
- * Callers treat an empty array as "nothing to show" and render the §65 empty
- * state. That is the correct behaviour: never fabricate data to fill a gap.
- * A read error is logged so the cause is never silent.
+ * `data` holds the rows; `error` is null on success — including a genuine
+ * empty result — and carries the database message when the read failed.
+ * The one exception is a missing client (local setup without keys): that
+ * keeps the old behaviour of an empty result with no error, because pages
+ * already message that state separately through `isConfigured()`.
+ *
+ * Callers must branch on `error` first. Rendering `data` alone repeats the
+ * old lie: a failed read shown as an empty result (invariant 9).
  */
-async function read<T>(table: string, build: (q: Query) => Query): Promise<T[]> {
+export interface ReadResult<T> {
+  data: T[];
+  error: string | null;
+}
+
+export interface ReadOneResult<T> {
+  data: T | null;
+  error: string | null;
+}
+async function read<T>(table: string, build: (q: Query) => Query): Promise<ReadResult<T>> {
   const c = db();
-  if (!c) return [];
+  if (!c) return { data: [], error: null };
   const { data, error } = await build(c.from(table));
   if (error) {
     console.error(`[radar] read ${table} failed: ${error.message}`);
-    return [];
+    return { data: [], error: error.message };
   }
-  if (!data) return [];
-  return (Array.isArray(data) ? data : [data]) as T[];
+  if (!data) return { data: [], error: null };
+  return { data: (Array.isArray(data) ? data : [data]) as T[], error: null };
 }
 
-async function readOne<T>(table: string, build: (q: Query) => Query): Promise<T | null> {
-  const rows = await read<T>(table, (q) => build(q).limit(1));
-  return rows[0] ?? null;
+async function readOne<T>(
+  table: string,
+  build: (q: Query) => Query,
+): Promise<ReadOneResult<T>> {
+  const { data: rows, error } = await read<T>(table, (q) => build(q).limit(1));
+  return { data: rows[0] ?? null, error };
 }
 
 /* ------------------------------------------------------------------ */
@@ -418,12 +434,15 @@ export const getOffersForModelId = (modelIdText: string) =>
  * This used to filter on the embedded relation (`.eq("provider.slug", …)`),
  * which PostgREST does not apply without an inner join — so the predicate
  * silently matched nothing and every provider page listed the whole site
- * (ORA-001). It now resolves the provider row first and filters on the
- * real `provider_id` foreign key. Ordering is untouched.
+ * (ORA-001). It resolves the
+ * provider row first and filters on the real `provider_id` foreign key.
+ * Ordering is untouched.
  */
-export const getOffersForProvider = async (slug: string) => {
-  const provider = await getProvider(slug);
-  if (!provider) return [];
+export const getOffersForProvider = async (
+  slug: string,
+): Promise<ReadResult<OfferWithProvider>> => {
+  const { data: provider } = await getProvider(slug);
+  if (!provider) return { data: [], error: null };
   return read<OfferWithProvider>("offers", (q) =>
     q.select(OFFER_WITH_PROVIDER).eq("provider_id", provider.id).order("status"),
   );

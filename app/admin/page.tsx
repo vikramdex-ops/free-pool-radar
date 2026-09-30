@@ -53,10 +53,11 @@ export default async function AdminPage() {
   // The registry is read with the elevated client. The public read path is
   // subject to RLS and returns an empty list rather than an error, which would
   // make this page report an empty registry while sources are registered.
-  const [{ data: sources, error: sourcesError }, status] = await Promise.all([
-    getSourcesAdmin(),
-    getStatus(),
-  ]);
+  const [{ data: sources, error: sourcesError }, { data: status, error: statusError }] =
+    await Promise.all([
+      getSourcesAdmin(),
+      getStatus(),
+    ]);
 
   return (
     <>
@@ -82,7 +83,15 @@ export default async function AdminPage() {
         </header>
 
         <div className="sect" style={{ paddingTop: 0 }}>
-          <dl className="facts">
+          {statusError ? (
+            <div className="empty">
+              <p className="empty-title">Source status could not be read</p>
+              <p>
+                This is a read failure, not an empty sweep history.
+              </p>
+            </div>
+          ) : (
+            <dl className="facts">
             <div>
               <dt className="label">Last sweep</dt>
               <dd className="mono">{stampUTC(status?.last_sweep_at ?? null) ?? "Never"}</dd>
@@ -116,6 +125,7 @@ export default async function AdminPage() {
               <dd className="mono">{status?.candidates_pending ?? 0}</dd>
             </div>
           </dl>
+          )}
 
           {sourcesError ? (
             /* A read that failed is not an empty registry. Saying so plainly is

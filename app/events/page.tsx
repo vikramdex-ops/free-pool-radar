@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getEvents } from "@/lib/db";
+import { getEvents, type RadarEvent } from "@/lib/db";
 import { compact, countdown, stampUTC } from "@/lib/format";
-import { EvidenceLink, PoolMeter } from "@/components/ui";
+import { EvidenceLink, PoolMeter, ReadError } from "@/components/ui";
 
 /** Event status is its own union, and it is wider than an offer's: an event can
  *  be cancelled, which no offer can be. Mapped here rather than cast at the
@@ -55,7 +55,7 @@ export const revalidate = 300;
  * asking different questions, and a chronological list answers only the second.
  */
 export default async function EventsPage() {
-  const events = await getEvents();
+  const { data: events, error: eventsError } = await getEvents();
   const now = Date.now();
 
   const upcoming = events.filter(
@@ -85,7 +85,13 @@ export default async function EventsPage() {
         </p>
       </header>
 
-      <nav className="event-jump" aria-label="Event sections">
+      {eventsError ? (
+        <div className="sect" style={{ paddingTop: "1.5rem" }}>
+          <ReadError what="Events" />
+        </div>
+      ) : (
+        <>
+          <nav className="event-jump" aria-label="Event sections">
         <a href="#running">Running now ({running.length})</a>
         <a href="#upcoming">Upcoming ({upcoming.length})</a>
         <a href="#finished">Finished ({finished.length})</a>
@@ -134,6 +140,8 @@ export default async function EventsPage() {
           <EventList events={finished} now={now} />
         )}
       </section>
+        </>
+      )}
     </main>
   );
 }
@@ -142,7 +150,7 @@ function EventList({
   events,
   now,
 }: {
-  events: Awaited<ReturnType<typeof getEvents>>;
+  events: RadarEvent[];
   now: number;
 }) {
   return (

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { EvidenceLink, PoolMeter, StatusBadge } from "@/components/ui";
+import { EvidenceLink, PoolMeter, ReadError, StatusBadge } from "@/components/ui";
 import { getEvent } from "@/lib/db";
 import {
   NOT_STATED,
@@ -21,7 +21,8 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const event = await getEvent(slug);
+  const { data: event, error: eventError } = await getEvent(slug);
+  if (eventError) return { title: "Event unavailable" };
   if (!event) return { title: "Event not found" };
   const size = event.pool_size
     ? ` — ${compact(event.pool_size)} ${unitLabel(event.unit)}`
@@ -43,7 +44,16 @@ export default async function EventPage({
 }) {
   const { slug } = await params;
   const now = Date.now();
-  const event = await getEvent(slug);
+  const { data: event, error: eventError } = await getEvent(slug);
+  if (eventError) {
+    return (
+      <main id="main" className="wrap">
+        <div className="sect">
+          <ReadError what={`Event ${slug}`} />
+        </div>
+      </main>
+    );
+  }
   if (!event) notFound();
 
   const c = countdown(event.start_at, now);

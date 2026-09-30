@@ -13,6 +13,7 @@ import { ChangeFeed, EndedArchive, SourceHealthPanel } from "@/components/Feed";
 import { Hero, Upcoming } from "@/components/Hero";
 import { OfferLedger } from "@/components/Ledger";
 import { Registry } from "@/components/Registry";
+import { ReadError } from "@/components/ui";
 import { Methodology } from "@/components/Methodology";
 import {
   getChanges,
@@ -36,7 +37,14 @@ export const metadata: Metadata = {
 export default async function Page() {
   const now = Date.now();
 
-  const [status, offers, events, changes, ended, providers] = await Promise.all([
+  const [
+    { data: status, error: statusError },
+    { data: offers, error: offersError },
+    { data: events, error: eventsError },
+    { data: changes, error: changesError },
+    { data: ended, error: endedError },
+    { data: providers, error: providersError },
+  ] = await Promise.all([
     getStatus(),
     getLiveOffers(),
     getEvents(),
@@ -62,7 +70,14 @@ export default async function Page() {
   return (
     <>
       <main id="main">
-        <Hero
+        {offersError || eventsError || changesError ? (
+          // The hero counts the whole site. Partial data would print wrong
+          // figures as fact, so a failed read replaces it, not empties it.
+          <div className="wrap" style={{ paddingTop: "2rem" }}>
+            <ReadError what="Front-page overview" />
+          </div>
+        ) : (
+          <Hero
           offers={offers}
           events={events}
           changes={changes}
@@ -75,16 +90,21 @@ export default async function Page() {
             withdrawn: ended.length,
           }}
         />
+        )}
 
         <div className="wrap">
           <div style={{ paddingTop: "2rem" }}>
-            <SourceHealthPanel
-              sourcesOk={sourcesOk}
-              sourcesTotal={sourcesTotal}
-              lastSweep={status?.last_sweep_at ?? null}
-              nextSweep={status?.next_sweep_at ?? null}
-              unhealthy={status?.sources_unhealthy ?? 0}
-            />
+            {statusError ? (
+              <ReadError what="Source status" />
+            ) : (
+              <SourceHealthPanel
+                sourcesOk={sourcesOk}
+                sourcesTotal={sourcesTotal}
+                lastSweep={status?.last_sweep_at ?? null}
+                nextSweep={status?.next_sweep_at ?? null}
+                unhealthy={status?.sources_unhealthy ?? 0}
+              />
+            )}
           </div>
 
           {!isConfigured() ? (
@@ -107,7 +127,11 @@ export default async function Page() {
                 chronologically, never by size.
               </p>
             </div>
-            <Upcoming events={events} offers={offers} now={now} />
+            {eventsError || offersError ? (
+              <ReadError what="Upcoming pools and events" />
+            ) : (
+              <Upcoming events={events} offers={offers} now={now} />
+            )}
           </section>
 
           <section id="live" className="sect">
@@ -127,46 +151,60 @@ export default async function Page() {
             </div>
             {/* Capped here so the landing page stays readable; /live holds the
                 complete set with filters. */}
-            <OfferLedger offers={offers} now={now} limit={40} />
+            {offersError ? (
+              <ReadError what="Live routes" />
+            ) : (
+              <OfferLedger offers={offers} now={now} limit={40} />
+            )}
           </section>
 
-          <ChangeFeed
-            id="new"
-            title="New"
-            changes={changes}
-            now={now}
-            kinds={["new"]}
-            emptyTitle="Nothing new this cycle"
-            emptyBody="The last sweep found no offers that were not already on record. New discoveries appear here the moment a monitored source publishes one."
-          />
+          {changesError ? (
+            <ReadError what="Recent changes" />
+          ) : (
+            <>
+              <ChangeFeed
+                id="new"
+                title="New"
+                changes={changes}
+                now={now}
+                kinds={["new"]}
+                emptyTitle="Nothing new this cycle"
+                emptyBody="The last sweep found no offers that were not already on record. New discoveries appear here the moment a monitored source publishes one."
+              />
 
-          <ChangeFeed
-            id="changed"
-            title="Changed"
-            changes={changes}
-            now={now}
-            kinds={[
-              "model_added",
-              "model_removed",
-              "quota_increased",
-              "quota_decreased",
-              "card_required",
-              "card_removed",
-              "subscription_required",
-              "subscription_removed",
-              "rate_limit_changed",
-              "price_changed",
-              "status_changed",
-              "pool_started",
-              "pool_exhausted",
-              "pool_extended",
-              "pool_cancelled",
-            ]}
-            emptyTitle="No tracked changes"
-            emptyBody="Nothing we track has changed since the last sweep. A quota move, a new card requirement or a rate-limit change appears here with both values."
-          />
+              <ChangeFeed
+                id="changed"
+                title="Changed"
+                changes={changes}
+                now={now}
+                kinds={[
+                  "model_added",
+                  "model_removed",
+                  "quota_increased",
+                  "quota_decreased",
+                  "card_required",
+                  "card_removed",
+                  "subscription_required",
+                  "subscription_removed",
+                  "rate_limit_changed",
+                  "price_changed",
+                  "status_changed",
+                  "pool_started",
+                  "pool_exhausted",
+                  "pool_extended",
+                  "pool_cancelled",
+                ]}
+                emptyTitle="No tracked changes"
+                emptyBody="Nothing we track has changed since the last sweep. A quota move, a new card requirement or a rate-limit change appears here with both values."
+              />
+            </>
+          )}
 
-          <EndedArchive offers={ended} now={now} />
+          {endedError ? (
+            <ReadError what="Withdrawn offers" />
+          ) : (
+            <EndedArchive offers={ended} now={now} />
+          )}
 
           <section id="registry" className="sect">
             <div className="sect-head">
@@ -176,7 +214,11 @@ export default async function Page() {
                 <span aria-hidden="true"> →</span>
               </Link>
             </div>
-            <Registry providers={providers} />
+            {providersError ? (
+              <ReadError what="Provider index" />
+            ) : (
+              <Registry providers={providers} />
+            )}
           </section>
 
           <Methodology />
