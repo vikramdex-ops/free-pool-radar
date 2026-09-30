@@ -10,6 +10,14 @@
 
 export const SITE_URL = "https://free-pool-radar.vercel.app";
 
+/**
+ * The canonical public repository. Kept beside SITE_URL so the live footer,
+ * the JSON-LD and the README all cite the same source rather than a link
+ * someone typed. The code is MIT and the data CC0; see LICENSE and
+ * DATA-LICENSE. Nothing here implies a provider endorsement - see NOTICE.md.
+ */
+export const REPO_URL = "https://github.com/vikramdex-ops/free-pool-radar";
+
 /** Renders its payload as a JSON-LD script tag. `<` is escaped so a
  *  stored string can never break out of the script element. */
 export function JsonLd({ data }: { data: unknown }) {

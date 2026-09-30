@@ -665,7 +665,10 @@ Every sweep must:
 9. Detect quota changes.
 10. Detect status changes.
 11. Detect start/end changes.
-12. Store observation.
+12. Store observation — but only when a collected value actually changed. A sweep
+    whose payload is byte-identical to the stored one appends nothing and only
+    refreshes `last_verified_at` (item 15). This is deliberate: it is what stops
+    a five-hourly schedule from manufacturing history that never happened.
 13. Store changes.
 14. Update current status.
 15. Update `last_verified_at`.

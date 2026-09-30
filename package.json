@@ -3,6 +3,22 @@
   "version": "1.0.0",
   "private": true,
   "license": "MIT",
+  "description": "A live radar of genuinely free AI inference - unranked, evidence-backed, never a ranker.",
+  "homepage": "https://free-pool-radar.vercel.app",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vikramdex-ops/free-pool-radar.git"
+  },
+  "bugs": {
+    "url": "https://github.com/vikramdex-ops/free-pool-radar/issues"
+  },
+  "keywords": [
+    "free-ai",
+    "api-tracker",
+    "open-data",
+    "postgres",
+    "vercel"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "next build",

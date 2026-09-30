@@ -1,10 +1,18 @@
 # Free Pool Radar
 
-[![Vercel deployment](https://vercel.com/badge?app=prj_TkZ2XVcFAKoMxxhdU9paUnpgeefu)](https://free-pool-radar.vercel.app)
+[![Live site](https://img.shields.io/badge/live-free--pool--radar-000000?style=flat-square&logo=vercel&logoColor=white)](https://free-pool-radar.vercel.app)
+[![Next.js](https://img.shields.io/badge/Next.js-16-000000?style=flat-square&logo=nextdotjs&logoColor=white)](https://nextjs.org)
+[![Supabase](https://img.shields.io/badge/Supabase-Postgres-3ECF8E?style=flat-square&logo=supabase&logoColor=white)](https://supabase.com)
+[![Code licence](https://img.shields.io/badge/code-MIT-0070F0?style=flat-square&labelColor=grey)](LICENSE)
+[![Data licence](https://img.shields.io/badge/data-CC0%201.0%20Universal-lightgrey?style=flat-square)](DATA-LICENSE)
+
+### **[https://free-pool-radar.vercel.app](https://free-pool-radar.vercel.app)**
 
 One live radar of genuinely free AI inference. No ranking, no scores, no invented figures.
 
 Every figure is read from an official source and re-verified on a five-hour cycle. When a free tier is withdrawn the record stays. History is never deleted.
+
+**[Live site](https://free-pool-radar.vercel.app)** · [Providers](https://free-pool-radar.vercel.app/providers) · [Live now](https://free-pool-radar.vercel.app/live) · [Timeline](https://free-pool-radar.vercel.app/timeline) · [Methodology](https://free-pool-radar.vercel.app/methodology) · [Public API](#public-api) · [Contributing](#contributing) · [Licence](#independent)
 
 ---
 
@@ -58,9 +66,11 @@ providers   the registry: name, official URL, type, country, status
 models      every model seen on a free route, with context and capabilities
 offers      one free route: type, status, card/subscription/key terms, quotas
 events      shared pools and promotions, with pool size and start time
-observations append-only: one row per source per sweep
+observations append-only: one row per sweep in which a collected value changed
 changes     append-only: one row per detected difference between two sweeps
 ```
+
+A sweep whose payload is byte-identical to the stored one is a deliberate no-op: it refreshes `last_verified_at` and appends nothing, so repeated sweeps cannot inflate the history. See [PRODUCT.md §12](PRODUCT.md) for the rule and [`/methodology`](https://free-pool-radar.vercel.app/methodology) for the user-facing version.
 
 **Status** is exactly one of `upcoming`, `live`, `changed`, `ending`, `exhausted`, `ended`, `suspended`, `unverified`.
 

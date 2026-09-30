@@ -11,6 +11,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ChangeFeed, EndedArchive, SourceHealthPanel } from "@/components/Feed";
 import { Hero, Upcoming } from "@/components/Hero";
+import { REPO_URL } from "@/components/JsonLd";
 import { OfferLedger } from "@/components/Ledger";
 import { Registry } from "@/components/Registry";
 import { ReadError } from "@/components/ui";
@@ -261,6 +262,26 @@ function SiteFooter() {
               <li><Link href="/api/live">/api/live</Link></li>
             </ul>
           </div>
+          <div>
+            <p className="label">Open source</p>
+            <ul className="foot-links">
+              <li>
+                <a href={REPO_URL} rel="noopener noreferrer" target="_blank">
+                  GitHub repository
+                </a>
+              </li>
+              <li>
+                <a href={`${REPO_URL}/blob/main/DATA-LICENSE`} rel="noopener noreferrer" target="_blank">
+                  Data licence (CC0)
+                </a>
+              </li>
+              <li>
+                <a href={`${REPO_URL}/blob/main/PRODUCT.md`} rel="noopener noreferrer" target="_blank">
+                  Full specification
+                </a>
+              </li>
+            </ul>
+          </div>
         </div>
 
         <div className="hairline" style={{ marginTop: "2.5rem", paddingTop: "1.5rem" }}>
@@ -273,6 +294,15 @@ function SiteFooter() {
           <p className="annot" style={{ marginTop: "0.75rem" }}>
             Free Pool Radar is an independent information service and is not
             affiliated with the providers listed. All timestamps are UTC.
+          </p>
+          <p className="annot" style={{ marginTop: "0.75rem" }}>
+            The code is MIT licensed and the collected dataset is released
+            under CC0 1.0 Universal &mdash; take it, check it, and build on it.
+            See the{" "}
+            <a href={REPO_URL} rel="noopener noreferrer" target="_blank">
+              source repository
+            </a>{" "}
+            for the full terms.
           </p>
         </div>
       </div>
