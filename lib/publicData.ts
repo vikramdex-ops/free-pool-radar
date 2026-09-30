@@ -146,16 +146,27 @@ const statusMeta = async () => {
 /* ------------------------------------------------------------------ */
 
 export async function livePayload() {
-  const offers = await getLiveOffers();
+  // The two reads are independent, so they go out together: on a serverless
+  // function each Supabase roundtrip costs real network time, and sequential
+  // awaits make them additive (PUL-006). Order is unaffected — each query
+  // keeps its own ORDER BY and the arrays are never interleaved.
+  const [offers, meta] = await Promise.all([getLiveOffers(), statusMeta()]);
   return envelope(offers.map(serialiseOffer), {
     count: offers.length,
-    ...(await statusMeta()),
+    ...meta,
   });
 }
 
 export async function upcomingPayload() {
-  const offers = await getUpcomingOffers();
-  const events = await getEvents();
+  // Same as above: three independent reads, one network wait instead of
+  // three. Offers and events stay in separate arrays in fixed positions,
+  // so no two records with the same sort key can interleave — invariant 1
+  // (never rank, missing values last) is preserved by construction.
+  const [offers, events, meta] = await Promise.all([
+    getUpcomingOffers(),
+    getEvents(),
+    statusMeta(),
+  ]);
   return envelope(
     {
       offers: offers.map(serialiseOffer),
@@ -178,7 +189,7 @@ export async function upcomingPayload() {
         lastVerifiedAt: iso(e.last_verified_at),
       })),
     },
-    { ...(await statusMeta()) },
+    { count: offers.length, ...meta },
   );
 }
 
