@@ -117,10 +117,13 @@ export default function MethodologyPage() {
           <h2>History is never deleted</h2>
           <p>
             An offer that ends is retained with its end date, the reason, and
-            the evidence. Every sweep appends an observation; nothing is
-            overwritten. That history is the reason the site answers questions
-            it could not answer when it launched, and deleting it would make the
-            product worse the longer it ran.
+            the evidence. A sweep appends an observation when the collected
+            payload differs from the stored one; an identical payload only
+            refreshes the verification timestamp, so repeated sweeps do not
+            duplicate history. Nothing is overwritten. That history is the
+            reason the site answers questions it could not answer when it
+            launched, and deleting it would make the product worse the longer
+            it ran.
           </p>
 
           <h2>Provenance of each row</h2>
