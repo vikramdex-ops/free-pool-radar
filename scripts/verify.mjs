@@ -102,6 +102,102 @@ for (const vp of VIEWPORTS) {
         );
       }
 
+      // PRI-001: the primary nav is a scrollable strip with its scrollbar
+      // hidden, so the scroll cue and keyboard operability must be asserted
+      // directly — the overflow check above cannot see inside the strip.
+      // Once per viewport is enough; the nav is identical on every page.
+      if (p.name === "home") {
+        const nav = await page.evaluate(() => {
+          const list = document.querySelector("ul.nav-list");
+          if (!list) return { missing: true };
+          const style = getComputedStyle(list);
+          const cue = getComputedStyle(
+            list.parentElement,
+            "::after",
+          );
+          const links = [...list.querySelectorAll("a")].map((a) =>
+            a.getAttribute("href"),
+          );
+          return {
+            missing: false,
+            tabIndex: list.tabIndex,
+            role: list.getAttribute("role"),
+            label: list.getAttribute("aria-label"),
+            clipped: list.scrollWidth > list.clientWidth + 1,
+            cueShown:
+              cue.display !== "none" &&
+              parseFloat(cue.width) > 0 &&
+              cue.content !== "none",
+            linkCount: links.length,
+            links,
+          };
+        });
+        if (nav.missing) {
+          problems.push(`${vp.name}/${theme} nav list missing`);
+        } else {
+          if (nav.tabIndex !== 0) {
+            problems.push(
+              `${vp.name}/${theme} nav list not keyboard-focusable (tabIndex ${nav.tabIndex})`,
+            );
+          }
+          if (nav.role !== "region" || !nav.label) {
+            problems.push(
+              `${vp.name}/${theme} nav scroll region unnamed (role ${nav.role})`,
+            );
+          }
+          if (nav.linkCount !== 8) {
+            problems.push(
+              `${vp.name}/${theme} nav has ${nav.linkCount} destinations, expected 8`,
+            );
+          }
+          if (nav.clipped && !nav.cueShown) {
+            problems.push(
+              `${vp.name}/${theme} nav clips destinations with no scroll cue`,
+            );
+          }
+          if (nav.clipped) {
+            // Keyboard reachability, with real key presses rather than a
+            // programmatic scrollTo: focus the strip and walk it to the far
+            // edge with ArrowRight (End scrolls vertically, not along the
+            // strip), then confirm the last destination is fully revealed.
+            await page.locator("ul.nav-list").focus();
+            const keyed = await page.evaluate(() => {
+              const list = document.querySelector("ul.nav-list");
+              return {
+                focused:
+                  document.activeElement === list ||
+                  list.contains(document.activeElement),
+              };
+            });
+            for (let i = 0; i < 30; i++) {
+              // No early break on a stalled reading: a missed frame must
+              // cost one press, never the whole walk.
+              await page.keyboard.press("ArrowRight");
+              await page.waitForTimeout(30);
+            }
+            const keyedAfter = await page.evaluate(() => {
+              const list = document.querySelector("ul.nav-list");
+              const links = [...list.querySelectorAll("a")];
+              const last = links[links.length - 1].getBoundingClientRect();
+              const box = list.getBoundingClientRect();
+              return {
+                scrolled: list.scrollLeft > 0,
+                lastVisible: last.right <= box.right + 1,
+              };
+            });
+            await page.keyboard.press("Home");
+            if (!keyed.focused) {
+              problems.push(`${vp.name}/${theme} nav strip cannot take focus`);
+            }
+            if (!keyedAfter.scrolled || !keyedAfter.lastVisible) {
+              problems.push(
+                `${vp.name}/${theme} last nav destinations unreachable by keyboard scroll`,
+              );
+            }
+          }
+        }
+      }
+
       if (p.name === "home" || vp.name === "desktop") {
         await page.screenshot({
           path: `${OUT}/${p.name}-${vp.name}-${theme}.png`,
