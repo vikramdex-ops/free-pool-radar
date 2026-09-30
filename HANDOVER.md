@@ -232,18 +232,18 @@ discovery candidates, 12 sources.
 ### Every PR is closed — do not reopen #7, #11 or #13
 
 All fourteen PRs are accounted for: eleven merged, three closed with a note
-explaining where their code landed. `main` is `1150aa8`.
+explaining where their code landed. `main` is `3b5c258`.
 
-PRs #7, #11 and #13 were cut from the pre-batch `main`. Merging them as-is did
-not add their work, it deleted the batch — `git diff origin/main
-origin/fix/VIS-008-methodology-observations` wanted to remove `LICENSE`,
-`DATA-LICENSE`, `NOTICE.md`, `app/robots.ts`, `app/sitemap.ts`,
-`next.config.ts`, `lib/login-throttle.ts`, `components/JsonLd.tsx`,
-`lib/metadata.ts` and seven test scripts. Their real commits were cherry-picked
-instead: `ad36588` (VIS-008), `1c02812` (PUL-003), `1150aa8` (the LED-001
-503-cache doc commit). If you branch from `main` today you are safe; if you are
-holding an old branch, `git fetch origin && git rebase origin/main` before
-anything else.
+The three branches behind the closed PRs — `fix/LED-001-read-errors`,
+`fix/PUL-003-social-preview` and `fix/VIS-008-methodology-observations` — have
+been **deleted on the remote**. Their commits were rebased or force-pushed after
+their content was already cherry-picked to `main`, which left them holding a
+pre-batch tree snapshot while still appearing "ahead of main" to `git rev-list`.
+Merging any of them would have deleted the licence files, robots.txt, sitemap,
+CSP config, login throttle, JSON-LD and seven test scripts. That is the failure
+mode to expect from a stale branch in this repo, and the reason the branches are
+gone rather than merely closed. If you were working on one of them, start again
+from `origin/main`.
 
 ### LED-020 is approved — build it, with these constraints
 
