@@ -64,33 +64,61 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       getEndedOffers(200),
     ]);
 
-    for (const p of providers) {
-      entries.push({
-        url: `${SITE}/providers/${p.slug}`,
-        lastModified: toDate(p.last_verified_at ?? p.updated_at) ?? now,
-      });
+    // LED-001 turned every reader into a ReadResult, so a failed read is a
+    // reported failure rather than a silently empty list. Each one is checked
+    // on its own: a source that failed contributes no dynamic URLs and is
+    // logged, while the static routes above are still served. Degrading one
+    // source is better than failing the whole sitemap, and better than
+    // publishing "this site has no providers".
+    const providerError = providers.error;
+    if (!providerError) {
+      for (const p of providers.data) {
+        entries.push({
+          url: `${SITE}/providers/${p.slug}`,
+          lastModified: toDate(p.last_verified_at ?? p.updated_at) ?? now,
+        });
+      }
     }
-    for (const m of models) {
-      entries.push({
-        url: `${SITE}/models/${m.slug}`,
-        lastModified: toDate(m.updated_at) ?? now,
-      });
+
+    if (!models.error) {
+      for (const m of models.data) {
+        entries.push({
+          url: `${SITE}/models/${m.slug}`,
+          lastModified: toDate(m.updated_at) ?? now,
+        });
+      }
     }
-    for (const e of events) {
-      entries.push({
-        url: `${SITE}/events/${e.slug}`,
-        lastModified: toDate(e.last_verified_at ?? e.discovered_at) ?? now,
-      });
+
+    if (!events.error) {
+      for (const e of events.data) {
+        entries.push({
+          url: `${SITE}/events/${e.slug}`,
+          lastModified: toDate(e.last_verified_at ?? e.discovered_at) ?? now,
+        });
+      }
     }
-    const seen = new Set<number>();
-    for (const o of [...live, ...ended]) {
-      if (seen.has(o.id)) continue;
-      seen.add(o.id);
-      entries.push({
-        url: `${SITE}/evidence/${o.id}`,
-        lastModified:
-          toDate(o.last_verified_at ?? o.first_verified_at) ?? now,
-      });
+
+    const offerError = live.error ?? ended.error;
+    if (!offerError) {
+      const seen = new Set<number>();
+      for (const o of [...live.data, ...ended.data]) {
+        if (seen.has(o.id)) continue;
+        seen.add(o.id);
+        entries.push({
+          url: `${SITE}/evidence/${o.id}`,
+          lastModified:
+            toDate(o.last_verified_at ?? o.first_verified_at) ?? now,
+        });
+      }
+    }
+
+    for (const [name, e] of Object.entries({
+      providers: providerError,
+      models: models.error,
+      events: events.error,
+      offers: offerError,
+    })) {
+      if (e) console.error(`[radar] sitemap ${name} read failed: ${e}`);
     }
   } catch (err) {
     console.error(`[radar] sitemap DB read failed: ${String(err)}`);

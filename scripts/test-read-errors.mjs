@@ -35,17 +35,25 @@ assert.ok(
 console.log("read() envelope: ok");
 
 // ---- Part 1b: every app route that reads must branch on the error ----
+// The readers are derived from lib/db.ts rather than matched as any `getX()`,
+// because a `get*` helper is not necessarily a read: login-throttle exports
+// getClientIp(), which reads a request header, and flagging it produced a false
+// failure with nothing behind it.
+const dbReaders = new Set(
+  [...dbSrc.matchAll(/export const (get[A-Z]\w*)/g)].map((m) => m[1]),
+);
 const appFiles = readDir(path.join(root, "app")).filter((p) =>
   /\.(tsx|ts)$/.test(p),
 );
 let checked = 0;
 for (const f of appFiles) {
   const src = fs.readFileSync(f, "utf8");
-  if (/await get[A-Z]\w*\(/.test(src)) {
+  const used = [...dbReaders].filter((r) => src.includes(`${r}(`));
+  if (used.length > 0) {
     checked++;
     assert.ok(
       /Error/.test(src),
-      `${path.relative(root, f)} reads but never branches on an error`,
+      `${path.relative(root, f)} reads via ${used.join(", ")} but never branches on an error`,
     );
   }
 }
