@@ -229,33 +229,50 @@ discovery candidates, 12 sources.
 
 ## 7. Outstanding work
 
-### Rebase before merging — three branches are on a dead base
+### Every PR is closed — do not reopen #7, #11 or #13
 
-Twelve PRs were merged into `main` in one batch on 2026-09-30, taking it to
-`f0bd005`. Three branches were cut from the pre-merge `main` and will revert most
-of that work if merged as-is:
+All fourteen PRs are accounted for: eleven merged, three closed with a note
+explaining where their code landed. `main` is `1150aa8`.
 
-| Branch | PR | What it actually wants to do |
-| --- | --- | --- |
-| `fix/LED-001-read-errors` | #7 | Already in `main`. The branch was force-pushed, so GitHub shows it unmerged, but its only unshipped commit is `d5e3e86` (503-cache documentation) |
-| `fix/PUL-003-social-preview` | #11 | `app/opengraph-image.tsx`, og tags in `app/layout.tsx`, `scripts/test-social-preview.mjs` |
-| `fix/VIS-008-methodology-observations` | #13 | The `/methodology` correction and `scripts/test-methodology-observations.mjs` |
+PRs #7, #11 and #13 were cut from the pre-batch `main`. Merging them as-is did
+not add their work, it deleted the batch — `git diff origin/main
+origin/fix/VIS-008-methodology-observations` wanted to remove `LICENSE`,
+`DATA-LICENSE`, `NOTICE.md`, `app/robots.ts`, `app/sitemap.ts`,
+`next.config.ts`, `lib/login-throttle.ts`, `components/JsonLd.tsx`,
+`lib/metadata.ts` and seven test scripts. Their real commits were cherry-picked
+instead: `ad36588` (VIS-008), `1c02812` (PUL-003), `1150aa8` (the LED-001
+503-cache doc commit). If you branch from `main` today you are safe; if you are
+holding an old branch, `git fetch origin && git rebase origin/main` before
+anything else.
 
-`git diff origin/main origin/fix/VIS-008-methodology-observations` shows 48 files
-changing with 2216 deletions, including `LICENSE`, `DATA-LICENSE`, `NOTICE.md`,
-`app/robots.ts`, `app/sitemap.ts`, `next.config.ts`, `lib/login-throttle.ts`,
-`components/JsonLd.tsx` and `lib/metadata.ts`. That is what "merging without
-rebasing" would actually do. Rebase first:
+### LED-020 is approved — build it, with these constraints
 
-```bash
-git fetch origin
-git rebase origin/main     # expect conflicts in app/layout.tsx and app/methodology/page.tsx
-npx tsc --noEmit
-npx next build
-node scripts/test-social-preview.mjs        # for #11
-node scripts/test-methodology-observations.mjs   # for #13
-git push --force-with-lease                 # your own branch only
-```
+`observations.source_id` is never written by the reconcile insert, so no
+observation row can be traced to the source it came from. Verified live: all
+rows have a NULL `source_id`. Build the fix. Constraints:
+
+1. **Insert-time lookup is the real fix.** Resolve the source id from the
+   collected payload inside the reconcile insert so new rows are attributed at
+   write time.
+2. **Backfill is best-effort and must be marked as such.** Host- or
+   URL-matching the offer's provider to a source is a heuristic, not proof. Add
+   a column recording that `source_id` was inferred rather than written, and
+   leave `source_id` NULL wherever the match is not unambiguous. A wrong
+   provenance is worse than a missing one — invariant 2 is exactly this.
+3. Do not end offers, delete rows, or touch `last_verified_at`.
+
+There is a second reason this matters, found while verifying VIS-008. Of the 7
+observations, 6 sit inside a sweep with `offers_changed > 0` — which is what
+proves the methodology page was overstating. The 7th, observation id 22 at
+`2026-09-29 09:20:15Z`, sits between sweep 14 (`09:18:21`, `offers_changed = 0`)
+and sweep 15 (`09:22:25`, `offers_changed = 1`), and matches neither. Until
+`source_id` exists it is not possible to say which sweep or which source wrote
+it. Fixing provenance resolves this too; papering over it does not.
+
+VIS-008 itself is closed and correct: `0005_set_based_reconcile.sql:43-45`
+states that returning no rows from `rpc_offer_changes` "is what makes a repeated
+sweep a complete no-op", and the live data agrees — 23 sweeps, 4 with changes,
+7 observations. The wording was wrong, not the pipeline.
 
 ### Work in a worktree, never the shared checkout
 
