@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { EvidenceLink, PoolMeter, StatusBadge } from "@/components/ui";
 import { getEvent } from "@/lib/db";
+import { truncateDescription } from "@/lib/metadata";
 import {
   NOT_STATED,
   ago,
@@ -28,9 +29,10 @@ export async function generateMetadata({
     : "";
   return {
     title: `${event.provider?.name ?? "Free"} AI API pool${size}`,
-    description:
+    description: truncateDescription(
       event.description ??
-      `Current status, pool size, models, requirements, start date and verification history for this free AI inference event.`,
+        `Status, pool size, models, requirements and verification history for this free AI inference event.`,
+    ),
     alternates: { canonical: `/events/${event.slug}` },
   };
 }

@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     template: "%s · Free Pool Radar",
   },
   description:
-    "The live intelligence layer for $0 AI inference. Shared token pools, free model endpoints, sponsored access, promotional credits and keyless routes — with exact quotas, card requirements, verification times, official sources, and the history of what has been withdrawn.",
+    "Live tracker of free AI inference pools: quotas, card rules, verification times, official sources and withdrawn history.",
   keywords: [
     "free llm api",
     "free ai api no credit card",

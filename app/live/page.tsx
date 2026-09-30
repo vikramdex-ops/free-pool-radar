@@ -8,7 +8,7 @@ export const revalidate = 300;
 export const metadata: Metadata = {
   title: "Live free AI access",
   description:
-    "Every currently usable free AI inference route, filterable by status, provider, model, access type, keyless availability, card and subscription requirement, published limits, freshness and OpenAI or Anthropic API compatibility.",
+    "Usable free AI routes now, filterable by provider, model, keyless access, card rules, limits, freshness and API compatibility.",
   alternates: { canonical: "/live" },
 };
 

@@ -6,6 +6,7 @@ import {
   getObservationsForOffer,
   getOffer,
 } from "@/lib/db";
+import { truncateDescription } from "@/lib/metadata";
 import {
   CHANGE_LABEL,
   FIELD_LABEL,
@@ -31,7 +32,9 @@ export async function generateMetadata({
   if (!offer) return { title: "Evidence not found" };
   return {
     title: `Evidence — ${offer.provider?.name ?? "provider"} ${offer.model_label}`,
-    description: `How and when Free Pool Radar verified free access to ${offer.model_label} at ${offer.provider?.name ?? "this provider"}, with the official source.`,
+    description: truncateDescription(
+      `How and when Free Pool Radar verified free access to ${offer.model_label} at ${offer.provider?.name ?? "this provider"}, with the official source.`,
+    ),
     alternates: { canonical: `/evidence/${offer.id}` },
   };
 }

@@ -8,7 +8,7 @@ export const revalidate = 300;
 export const metadata: Metadata = {
   title: "Provider index",
   description:
-    "Every AI provider tracked for free inference access: shared pools, free tiers, sponsored inference, keyless routes and withdrawn offers, with card and subscription requirements and verification history.",
+    "Providers tracked for free AI access: pools, tiers, sponsored routes and withdrawn offers, with card rules and verification history.",
   alternates: { canonical: "/providers" },
 };
 
