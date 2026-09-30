@@ -341,6 +341,14 @@ export function LiveBrowser({
       <div className="filter-bar" role="group" aria-label="Filter by access term">
         {PILLS.map((p) => {
           const on = pills.includes(p.key);
+          // No card and No subscription currently match every tracked route.
+          // They stay as controls (and narrow again the moment a gated route
+          // exists) but are labelled as the standing fact they are, so
+          // selecting one never implies it narrowed anything (VIS-012).
+          const fact =
+            p.key === "cardless" || p.key === "subless"
+              ? "True of every tracked route at present"
+              : undefined;
           return (
             <button
               key={p.key}
@@ -348,12 +356,18 @@ export function LiveBrowser({
               className="filter"
               aria-pressed={on}
               onClick={() => togglePill(p.key)}
+              title={fact}
+              aria-label={fact ? `${p.label} (${fact.toLowerCase()})` : p.label}
             >
               {p.label}
             </button>
           );
         })}
       </div>
+      <p className="annot" style={{ marginTop: "0.5rem" }}>
+        No card and No subscription currently match every tracked route. They
+        confirm the market as it stands rather than narrowing it.
+      </p>
 
       {/* The §31 filter set, as selects. Grouped so the shape of the question is
           visible: what it is, who offers it, what it needs, how fresh it is. */}

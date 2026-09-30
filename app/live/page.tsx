@@ -31,10 +31,12 @@ export default async function LivePage() {
         <h1 className="page-title">Free access right now</h1>
         <p className="page-lede">
           Every route currently usable at no cost, with the terms that apply to
-          it. Filters are facts, not a ranking: choosing &ldquo;no card&rdquo;
-          tells you which offers need no payment method, and choosing
-          &ldquo;anthropic compatible&rdquo; tells you which speak that
-          dialect. Nothing here is scored.
+          it. Filters are facts, not a ranking: choosing &ldquo;anthropic
+          compatible&rdquo; tells you which speak that dialect, and choosing
+          &ldquo;no card&rdquo; confirms what holds across the whole market at
+          present &mdash; every tracked route needs no payment method and no
+          subscription, so those two pills confirm rather than narrow. Nothing
+          here is scored.
         </p>
         <p className="annot mono" style={{ marginTop: "0.875rem" }}>
           {statusError ? (
