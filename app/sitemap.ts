@@ -20,6 +20,16 @@ import {
 
 const SITE = "https://free-pool-radar.vercel.app";
 
+/**
+ * Force-dynamic on purpose (invariant 8, §76). Without this the App Router
+ * prerenders the sitemap once at build time and bakes the slugs in: a newly
+ * discovered provider, model or event would never reach /sitemap.xml until
+ * somebody redeploys, which is exactly the redeploy-for-a-data-change the
+ * product promises never to need. robots.ts stays prerendered — crawl rules
+ * genuinely are static.
+ */
+export const dynamic = "force-dynamic";
+
 const STATIC_ROUTES = [
   "/",
   "/live",
