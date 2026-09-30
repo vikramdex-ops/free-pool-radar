@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getEvents, getLiveOffers, getModels, getProviders, getTimeline } from "@/lib/db";
-import { SEARCH_EXAMPLES, search, type HitKind } from "@/lib/search";
+import { ReadError } from "@/components/ui";
+import { SEARCH_EXAMPLES, search, type HitKind, type SearchResult } from "@/lib/search";
 import { stampUTC } from "@/lib/format";
 
 export const metadata: Metadata = {
@@ -39,18 +40,39 @@ export default async function SearchPage({
 
   // Nothing is fetched for an empty query. Landing on /search should not cost
   // five queries to render an empty form.
-  const results = query
+  const searched = query
     ? await (async () => {
-        const [providers, models, offers, events, changes] = await Promise.all([
+        const [
+          { data: providers, error: providersError },
+          { data: models, error: modelsError },
+          { data: offers, error: offersError },
+          { data: events, error: eventsError },
+          { data: changes, error: changesError },
+        ] = await Promise.all([
           getProviders(),
           getModels(),
           getLiveOffers(),
           getEvents(),
           getTimeline(500),
         ]);
-        return search({ query, providers, models, offers, events, changes, now });
+        const failed = [
+          providersError && "providers",
+          modelsError && "models",
+          offersError && "offers",
+          eventsError && "events",
+          changesError && "change history",
+        ].filter((f): f is string => Boolean(f));
+        if (failed.length > 0) return { failed };
+        return {
+          failed: [] as string[],
+          results: search({ query, providers, models, offers, events, changes, now }),
+        };
       })()
     : null;
+
+  const results: SearchResult | null =
+    searched && "results" in searched ? (searched.results ?? null) : null;
+  const searchFailed = searched ? searched.failed : [];
 
   return (
     <main id="main" className="wrap">
@@ -108,6 +130,11 @@ export default async function SearchPage({
             </p>
           </div>
         </>
+      ) : searchFailed.length > 0 ? (
+        // A failed read must never present as "nothing matched".
+        <div className="sect" style={{ paddingTop: "1.5rem" }}>
+          <ReadError what={`Search (${searchFailed.join(", ")})`} />
+        </div>
       ) : results === null ? null : (
         <>
           {/* How the query was read, stated before the results.

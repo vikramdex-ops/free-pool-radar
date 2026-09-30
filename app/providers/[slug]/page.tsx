@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { OfferLedger } from "@/components/Ledger";
-import { EvidenceLink, FreshnessIndicator, StatusBadge } from "@/components/ui";
+import { EvidenceLink, FreshnessIndicator, ReadError, StatusBadge } from "@/components/ui";
 import {
   getChanges,
   getOffersForProvider,
@@ -28,7 +28,9 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const provider = await getProvider(slug);
+  const { data: provider, error: providerError } = await getProvider(slug);
+  if (providerError)
+    return { title: "Provider unavailable" };
   if (!provider) return { title: "Provider not found" };
 
   const live = provider.live_offer_count;
@@ -55,13 +57,25 @@ export default async function ProviderPage({
 }) {
   const { slug } = await params;
   const now = Date.now();
-  const provider = await getProvider(slug);
+  const { data: provider, error: providerError } = await getProvider(slug);
+  if (providerError) {
+    // The header itself is the provider row. Without it there is no page,
+    // only the failure — never a 404 for a provider that may exist.
+    return (
+      <main id="main" className="wrap">
+        <div className="sect">
+          <ReadError what={`Provider ${slug}`} />
+        </div>
+      </main>
+    );
+  }
   if (!provider) notFound();
 
-  const [offers, changes] = await Promise.all([
-    getOffersForProvider(slug),
-    getChanges(120),
-  ]);
+  const [{ data: offers, error: offersError }, { data: changes, error: changesError }] =
+    await Promise.all([
+      getOffersForProvider(slug),
+      getChanges(120),
+    ]);
 
   const providerChanges = changes.filter((c) => c.provider?.slug === slug);
   const live = offers.filter((o) => o.status === "live" || o.status === "changed");
@@ -104,103 +118,117 @@ export default async function ProviderPage({
           </div>
         </header>
 
-        <section className="sect" style={{ paddingTop: 0 }}>
-          <div className="sect-head">
-            <h2 className="sect-title">Current position</h2>
-            {provider.last_verified_at ? (
-              <FreshnessIndicator
-                freshness={freshness(provider.last_verified_at, now)}
-                ago={ago(provider.last_verified_at, now)}
-              />
-            ) : null}
-          </div>
-
-          <dl className="facts">
-            <div>
-              <dt className="label">Free model ids</dt>
-              <dd className="mono">
-                {provider.free_model_count > 0
-                  ? num(provider.free_model_count)
-                  : NOT_STATED}
-              </dd>
-            </div>
-            <div>
-              <dt className="label">Live offers</dt>
-              <dd className="mono">
-                {provider.live_offer_count > 0
-                  ? num(provider.live_offer_count)
-                  : NOT_STATED}
-              </dd>
-            </div>
-            <div>
-              <dt className="label">Card required</dt>
-              <dd>
-                {cardSummary(offers)}
-              </dd>
-            </div>
-            <div>
-              <dt className="label">Subscription required</dt>
-              <dd>{subSummary(offers)}</dd>
-            </div>
-            <div>
-              <dt className="label">Largest pool</dt>
-              <dd className="mono">{poolSummary(offers)}</dd>
-            </div>
-            <div>
-              <dt className="label">Last verified</dt>
-              <dd className="mono">{stampUTC(provider.last_verified_at) ?? "Never"}</dd>
-            </div>
-          </dl>
-        </section>
-
-        <section className="sect" style={{ paddingTop: 0 }}>
-          <div className="sect-head">
-            <h2 className="sect-title">Free access now</h2>
-            <p className="sect-note">
-              Every route currently usable from {provider.name}, with the terms
-              that apply to each.
-            </p>
-          </div>
-          <OfferLedger offers={live} now={now} showProvider={false} />
-        </section>
-
-        {ended.length ? (
+        {offersError ? (
+          <section className="sect" style={{ paddingTop: 0 }}>
+            <ReadError what={`${provider.name} current position`} />
+          </section>
+        ) : (
           <section className="sect" style={{ paddingTop: 0 }}>
             <div className="sect-head">
-              <h2 className="sect-title">Withdrawn at {provider.name}</h2>
+              <h2 className="sect-title">Current position</h2>
+              {provider.last_verified_at ? (
+                <FreshnessIndicator
+                  freshness={freshness(provider.last_verified_at, now)}
+                  ago={ago(provider.last_verified_at, now)}
+                />
+              ) : null}
             </div>
-            <div className="tbl-wrap">
-              <table className="tbl">
-                <caption>{ended.length} withdrawn offer(s)</caption>
-                <thead>
-                  <tr>
-                    <th scope="col">Offer</th>
-                    <th scope="col">Ended</th>
-                    <th scope="col">Reason</th>
-                    <th scope="col">Evidence</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ended.map((o) => (
-                    <tr key={o.id}>
-                      <td>
-                        <span className="key mono">{o.model_label}</span>
-                        <div style={{ marginTop: "0.375rem" }}>
-                          <StatusBadge status="ended" />
-                        </div>
-                      </td>
-                      <td className="num">{stampUTC(o.ended_at)}</td>
-                      <td>{o.exhaustion_condition ?? NOT_STATED}</td>
-                      <td>
-                            <EvidenceLink offerId={o.id} />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+
+            <dl className="facts">
+              <div>
+                <dt className="label">Free model ids</dt>
+                <dd className="mono">
+                  {provider.free_model_count > 0
+                    ? num(provider.free_model_count)
+                    : NOT_STATED}
+                </dd>
+              </div>
+              <div>
+                <dt className="label">Live offers</dt>
+                <dd className="mono">
+                  {provider.live_offer_count > 0
+                    ? num(provider.live_offer_count)
+                    : NOT_STATED}
+                </dd>
+              </div>
+              <div>
+                <dt className="label">Card required</dt>
+                <dd>
+                  {cardSummary(offers)}
+                </dd>
+              </div>
+              <div>
+                <dt className="label">Subscription required</dt>
+                <dd>{subSummary(offers)}</dd>
+              </div>
+              <div>
+                <dt className="label">Largest pool</dt>
+                <dd className="mono">{poolSummary(offers)}</dd>
+              </div>
+              <div>
+                <dt className="label">Last verified</dt>
+                <dd className="mono">{stampUTC(provider.last_verified_at) ?? "Never"}</dd>
+              </div>
+            </dl>
           </section>
-        ) : null}
+        )}
+
+        {offersError ? (
+          <section className="sect" style={{ paddingTop: 0 }}>
+            <ReadError what={`${provider.name} free routes`} />
+          </section>
+        ) : (
+          <>
+            <section className="sect" style={{ paddingTop: 0 }}>
+              <div className="sect-head">
+                <h2 className="sect-title">Free access now</h2>
+                <p className="sect-note">
+                  Every route currently usable from {provider.name}, with the terms
+                  that apply to each.
+                </p>
+              </div>
+              <OfferLedger offers={live} now={now} showProvider={false} />
+            </section>
+
+            {ended.length ? (
+              <section className="sect" style={{ paddingTop: 0 }}>
+                <div className="sect-head">
+                  <h2 className="sect-title">Withdrawn at {provider.name}</h2>
+                </div>
+                <div className="tbl-wrap">
+                  <table className="tbl">
+                    <caption>{ended.length} withdrawn offer(s)</caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">Offer</th>
+                        <th scope="col">Ended</th>
+                        <th scope="col">Reason</th>
+                        <th scope="col">Evidence</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ended.map((o) => (
+                        <tr key={o.id}>
+                          <td>
+                            <span className="key mono">{o.model_label}</span>
+                            <div style={{ marginTop: "0.375rem" }}>
+                              <StatusBadge status="ended" />
+                            </div>
+                          </td>
+                          <td className="num">{stampUTC(o.ended_at)}</td>
+                          <td>{o.exhaustion_condition ?? NOT_STATED}</td>
+                          <td>
+                            <EvidenceLink offerId={o.id} />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            ) : null}
+          </>
+        )}
 
         <section className="sect" style={{ paddingTop: 0 }}>
           <div className="sect-head">
@@ -209,7 +237,9 @@ export default async function ProviderPage({
               Every recorded change for {provider.name}, newest first.
             </p>
           </div>
-          {providerChanges.length === 0 ? (
+          {changesError ? (
+            <ReadError what={`${provider.name} change history`} />
+          ) : providerChanges.length === 0 ? (
             <div className="empty">
               <p className="empty-title">No recorded changes</p>
               <p>
@@ -247,43 +277,49 @@ export default async function ProviderPage({
           )}
         </section>
 
-        <section className="sect" style={{ paddingTop: 0 }}>
-          <div className="sect-head">
-            <h2 className="sect-title">Conditions and privacy</h2>
-          </div>
-          <div className="tbl-wrap">
-            <table className="tbl">
-              <caption>
-                As published by {provider.name}. Absent figures are shown as not
-                publicly stated rather than guessed.
-              </caption>
-              <thead>
-                <tr>
-                  <th scope="col">Route</th>
-                  <th scope="col">Quota</th>
-                  <th scope="col">Commercial use</th>
-                  <th scope="col">Data policy</th>
-                  <th scope="col">Retention</th>
-                  <th scope="col">Evidence level</th>
-                </tr>
-              </thead>
-              <tbody>
-                {offers.map((o) => (
-                  <tr key={o.id}>
-                    <td>
-                      <span className="key mono">{o.model_label}</span>
-                    </td>
-                    <td className="num">{quota(o) ?? NOT_STATED}</td>
-                    <td>{o.commercial_use ?? NOT_STATED}</td>
-                    <td>{o.data_policy ?? NOT_STATED}</td>
-                    <td>{o.retention_policy ?? NOT_STATED}</td>
-                    <td>{o.verification_level.replace(/_/g, " ")}</td>
+        {offersError ? (
+          <section className="sect" style={{ paddingTop: 0 }}>
+            <ReadError what={`${provider.name} conditions`} />
+          </section>
+        ) : (
+          <section className="sect" style={{ paddingTop: 0 }}>
+            <div className="sect-head">
+              <h2 className="sect-title">Conditions and privacy</h2>
+            </div>
+            <div className="tbl-wrap">
+              <table className="tbl">
+                <caption>
+                  As published by {provider.name}. Absent figures are shown as not
+                  publicly stated rather than guessed.
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Route</th>
+                    <th scope="col">Quota</th>
+                    <th scope="col">Commercial use</th>
+                    <th scope="col">Data policy</th>
+                    <th scope="col">Retention</th>
+                    <th scope="col">Evidence level</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
+                </thead>
+                <tbody>
+                  {offers.map((o) => (
+                    <tr key={o.id}>
+                      <td>
+                        <span className="key mono">{o.model_label}</span>
+                      </td>
+                      <td className="num">{quota(o) ?? NOT_STATED}</td>
+                      <td>{o.commercial_use ?? NOT_STATED}</td>
+                      <td>{o.data_policy ?? NOT_STATED}</td>
+                      <td>{o.retention_policy ?? NOT_STATED}</td>
+                      <td>{o.verification_level.replace(/_/g, " ")}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
       </main>
     </>
   );

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Registry } from "@/components/Registry";
+import { ReadError } from "@/components/ui";
 import { getProviders } from "@/lib/db";
 
 export const revalidate = 300;
@@ -14,7 +15,7 @@ export const metadata: Metadata = {
 
 /** §26. The index of provider pages. */
 export default async function ProvidersPage() {
-  const providers = await getProviders();
+  const { data: providers, error: providersError } = await getProviders();
   return (
     <>
       <main id="main" className="wrap">
@@ -30,7 +31,11 @@ export default async function ProvidersPage() {
         </header>
 
         <div className="sect" style={{ paddingTop: 0 }}>
-          <Registry providers={providers} />
+          {providersError ? (
+            <ReadError what="Provider index" />
+          ) : (
+            <Registry providers={providers} />
+          )}
         </div>
       </main>
     </>

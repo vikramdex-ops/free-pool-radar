@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { LiveBrowser } from "@/components/LiveBrowser";
+import { ReadError } from "@/components/ui";
 import { getChanges, getLiveOffers, getStatus } from "@/lib/db";
 import { stampUTC } from "@/lib/format";
 
@@ -17,11 +18,11 @@ export default async function LivePage() {
   const now = Date.now();
   // Changes are fetched because "recently changed" (§32) cannot be derived from
   // the offer row: that holds current state, not when it last moved.
-  const [offers, changes, status] = await Promise.all([
-    getLiveOffers(),
-    getChanges(500),
-    getStatus(),
-  ]);
+  const [
+    { data: offers, error: offersError },
+    { data: changes, error: changesError },
+    { data: status, error: statusError },
+  ] = await Promise.all([getLiveOffers(), getChanges(500), getStatus()]);
 
   return (
     <main id="main" className="wrap">
@@ -36,15 +37,25 @@ export default async function LivePage() {
           dialect. Nothing here is scored.
         </p>
         <p className="annot mono" style={{ marginTop: "0.875rem" }}>
-          Last sweep {stampUTC(status?.last_sweep_at ?? null) ?? "not yet run"} ·
-          next {stampUTC(status?.next_sweep_at ?? null) ?? "not scheduled"} ·{" "}
-          {status?.sources_ok ?? 0}/{status?.sources_total ?? 0} sources
-          responding
+          {statusError ? (
+            <>Source status could not be read.</>
+          ) : (
+            <>
+              Last sweep {stampUTC(status?.last_sweep_at ?? null) ?? "not yet run"} · next{" "}
+              {stampUTC(status?.next_sweep_at ?? null) ?? "not scheduled"} ·{" "}
+              {status?.sources_ok ?? 0}/{status?.sources_total ?? 0} sources
+              responding
+            </>
+          )}
         </p>
       </header>
 
       <div className="sect" style={{ paddingTop: "1.5rem" }}>
-        <LiveBrowser offers={offers} changes={changes} now={now} />
+        {offersError || changesError ? (
+          <ReadError what="Live routes" />
+        ) : (
+          <LiveBrowser offers={offers} changes={changes} now={now} />
+        )}
       </div>
     </main>
   );
