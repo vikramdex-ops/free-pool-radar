@@ -113,6 +113,14 @@ npx vercel --prod --yes
 npx vercel env ls          # confirm variables are present
 ```
 
+**Merging to `main` does not deploy.** As of 2026-09-30 the Vercel project is
+not connected to this GitHub repository: the repo has zero GitHub deployments
+and zero commit statuses. Production only changes when someone runs
+`vercel --prod` with an authenticated CLI. Do not assume a merge went live —
+check `https://free-pool-radar.vercel.app/robots.txt` returns 200 and that the
+response carries a `Content-Security-Policy` header. Both are absent on any
+build older than CIP-003/PUL-001.
+
 ### Verify
 
 ```bash
@@ -221,6 +229,52 @@ discovery candidates, 12 sources.
 
 ## 7. Outstanding work
 
+### Rebase before merging — three branches are on a dead base
+
+Twelve PRs were merged into `main` in one batch on 2026-09-30, taking it to
+`f0bd005`. Three branches were cut from the pre-merge `main` and will revert most
+of that work if merged as-is:
+
+| Branch | PR | What it actually wants to do |
+| --- | --- | --- |
+| `fix/LED-001-read-errors` | #7 | Already in `main`. The branch was force-pushed, so GitHub shows it unmerged, but its only unshipped commit is `d5e3e86` (503-cache documentation) |
+| `fix/PUL-003-social-preview` | #11 | `app/opengraph-image.tsx`, og tags in `app/layout.tsx`, `scripts/test-social-preview.mjs` |
+| `fix/VIS-008-methodology-observations` | #13 | The `/methodology` correction and `scripts/test-methodology-observations.mjs` |
+
+`git diff origin/main origin/fix/VIS-008-methodology-observations` shows 48 files
+changing with 2216 deletions, including `LICENSE`, `DATA-LICENSE`, `NOTICE.md`,
+`app/robots.ts`, `app/sitemap.ts`, `next.config.ts`, `lib/login-throttle.ts`,
+`components/JsonLd.tsx` and `lib/metadata.ts`. That is what "merging without
+rebasing" would actually do. Rebase first:
+
+```bash
+git fetch origin
+git rebase origin/main     # expect conflicts in app/layout.tsx and app/methodology/page.tsx
+npx tsc --noEmit
+npx next build
+node scripts/test-social-preview.mjs        # for #11
+node scripts/test-methodology-observations.mjs   # for #13
+git push --force-with-lease                 # your own branch only
+```
+
+### Work in a worktree, never the shared checkout
+
+Eight agents share `C:\Users\vikram\Documents\Default Project\free-pool-radar`.
+A `git checkout` there deletes another agent's uncommitted work, and this has
+already destroyed work twice. Use:
+
+```bash
+git worktree add C:\Temp\opencode\wt-<agent> -b <branch> origin/main
+```
+
+Turbopack rejects a `node_modules` junction that points outside the project
+root, so copy the directory rather than junctioning it:
+`robocopy <repo>\node_modules <worktree>\node_modules /E /NFL /NDL /NJH /NJS /NP /MT:16`.
+Playwright lives one level above the repo, so `scripts/verify.mjs` only resolves
+it when run from the repo directory — start the server from the worktree and run
+verify from the repo with `BASE=http://localhost:<port>`.
+
+### Rotate the Supabase secret key
 **Rotate the Supabase secret key.** It is in plaintext in prior chat transcripts
 and must be treated as disclosed. In the Supabase dashboard, create a new secret
 key, then:
