@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getEvents } from "@/lib/db";
+import { JsonLd, SITE_URL } from "@/components/JsonLd";
 import { compact, countdown, stampUTC } from "@/lib/format";
 import { EvidenceLink, PoolMeter } from "@/components/ui";
 
@@ -75,6 +76,19 @@ export default async function EventsPage() {
 
   return (
     <main id="main" className="wrap">
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "ItemList",
+          name: "Promotional events and pooled free AI access",
+          itemListElement: events.map((e, i) => ({
+            "@type": "ListItem",
+            position: i + 1,
+            name: e.name,
+            url: `${SITE_URL}/events/${e.slug}`,
+          })),
+        }}
+      />
       <header className="page-head">
         <p className="label">Events</p>
         <h1 className="page-title">Promotional events and pooled access</h1>

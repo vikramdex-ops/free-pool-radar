@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { EmptyState } from "@/components/ui";
+import { JsonLd, SITE_URL } from "@/components/JsonLd";
 import { getModels } from "@/lib/db";
 import { num } from "@/lib/format";
 
@@ -24,6 +25,19 @@ export default async function ModelsPage() {
   const models = await getModels();
   return (
     <>
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "ItemList",
+          name: "Models found on free AI inference routes",
+          itemListElement: models.map((m, i) => ({
+            "@type": "ListItem",
+            position: i + 1,
+            name: m.display_name,
+            url: `${SITE_URL}/models/${m.slug}`,
+          })),
+        }}
+      />
       <main id="main" className="wrap">
         <header className="page-head">
           <p className="label">Index</p>
