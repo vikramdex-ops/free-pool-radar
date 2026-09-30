@@ -412,10 +412,22 @@ export const getOffersForModelId = (modelIdText: string) =>
       .order("status"),
   );
 
-export const getOffersForProvider = (slug: string) =>
-  read<OfferWithProvider>("offers", (q) =>
-    q.select(OFFER_WITH_PROVIDER).eq("provider.slug", slug).order("status"),
+/**
+ * Free routes for one provider.
+ *
+ * This used to filter on the embedded relation (`.eq("provider.slug", …)`),
+ * which PostgREST does not apply without an inner join — so the predicate
+ * silently matched nothing and every provider page listed the whole site
+ * (ORA-001). It now resolves the provider row first and filters on the
+ * real `provider_id` foreign key. Ordering is untouched.
+ */
+export const getOffersForProvider = async (slug: string) => {
+  const provider = await getProvider(slug);
+  if (!provider) return [];
+  return read<OfferWithProvider>("offers", (q) =>
+    q.select(OFFER_WITH_PROVIDER).eq("provider_id", provider.id).order("status"),
   );
+};
 
 /** A single offer with its provider, for the evidence page. */
 export const getOffer = (id: number) =>
