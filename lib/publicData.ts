@@ -130,8 +130,20 @@ export function envelope(
   );
 }
 
+/** A failed read is never rendered as an empty result (LED-001, invariant 9).
+ *  API consumers get an explicit error status rather than a 200 with []. */
+export function readErrorResponse(what: string): NextResponse {
+  return NextResponse.json(
+    {
+      error: "read_failed",
+      message: `The ${what} could not be read. This is a read failure, not an empty result.`,
+    },
+    { status: 503 },
+  );
+}
+
 const statusMeta = async () => {
-  const s = await getStatus();
+  const { data: s } = await getStatus();
   return s
     ? {
         sources: { total: s.sources_total, ok: s.sources_ok, impaired: s.sources_unhealthy },
@@ -146,7 +158,8 @@ const statusMeta = async () => {
 /* ------------------------------------------------------------------ */
 
 export async function livePayload() {
-  const offers = await getLiveOffers();
+  const { data: offers, error: offersError } = await getLiveOffers();
+  if (offersError) return readErrorResponse("live offers");
   return envelope(offers.map(serialiseOffer), {
     count: offers.length,
     ...(await statusMeta()),
@@ -154,8 +167,10 @@ export async function livePayload() {
 }
 
 export async function upcomingPayload() {
-  const offers = await getUpcomingOffers();
-  const events = await getEvents();
+  const [{ data: offers, error: offersError }, { data: events, error: eventsError }] =
+    await Promise.all([getUpcomingOffers(), getEvents()]);
+  if (offersError) return readErrorResponse("upcoming offers");
+  if (eventsError) return readErrorResponse("events");
   return envelope(
     {
       offers: offers.map(serialiseOffer),
@@ -183,6 +198,7 @@ export async function upcomingPayload() {
 }
 
 export async function endedPayload() {
-  const offers = await getEndedOffers();
+  const { data: offers, error: offersError } = await getEndedOffers();
+  if (offersError) return readErrorResponse("ended offers");
   return envelope(offers.map(serialiseOffer), { count: offers.length });
 }

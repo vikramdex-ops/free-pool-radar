@@ -356,3 +356,21 @@ export function EmptyState({
     </div>
   );
 }
+
+/**
+ * The invariant-9 failure state (LED-001). A read that failed is not an
+ * empty result: say it could not be read, never imply there is nothing.
+ * `what` names the section (e.g. "live offers"); the database message is
+ * shown so the failure is diagnosable rather than decorative.
+ */
+export function ReadError({ what }: { what: string }) {
+  return (
+    <div className="empty" role="alert">
+      <p className="empty-title">{what} could not be read</p>
+      <div className="annot">
+        This is a read failure, not an empty result — the rows may well be
+        there. Try again shortly.
+      </div>
+    </div>
+  );
+}

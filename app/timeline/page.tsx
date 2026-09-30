@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { EmptyState, EvidenceLink } from "@/components/ui";
+import { EmptyState, EvidenceLink, ReadError } from "@/components/ui";
 import { getTimeline } from "@/lib/db";
 import { CHANGE_LABEL, FIELD_LABEL, ago, stampUTC } from "@/lib/format";
 
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 /** §28. A global, filterable history of everything that moved. */
 export default async function TimelinePage() {
   const now = Date.now();
-  const changes = await getTimeline(300);
+  const { data: changes, error: changesError } = await getTimeline(300);
 
   // Grouped by UTC day, so the timeline reads as a log rather than a feed.
   const byDay = new Map<string, typeof changes>();
@@ -40,7 +40,9 @@ export default async function TimelinePage() {
           </p>
         </header>
 
-        {changes.length === 0 ? (
+        {changesError ? (
+          <ReadError what="Change history" />
+        ) : changes.length === 0 ? (
           <EmptyState title="No changes recorded">
             No differences have been detected between sweeps yet. Once a quota,
             card requirement, model list or status moves, it appears here with

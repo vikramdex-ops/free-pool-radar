@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { EmptyState, EvidenceLink } from "@/components/ui";
-import { getLiveOffers } from "@/lib/db";
+import { EmptyState, EvidenceLink, ReadError } from "@/components/ui";
+import { getLiveOffers, type OfferWithProvider } from "@/lib/db";
 import { NOT_STATED, compact, num, unitLabel } from "@/lib/format";
 
 export const revalidate = 300;
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
  * commensurable, and they are not.
  */
 export default async function ComparePage() {
-  const offers = await getLiveOffers();
+  const { data: offers, error: offersError } = await getLiveOffers();
 
   // One row per provider, built from its offers.
   const byProvider = new Map<
@@ -31,7 +31,7 @@ export default async function ComparePage() {
       name: string;
       slug: string;
       url: string;
-      offers: typeof offers;
+      offers: OfferWithProvider[];
     }
   >();
   for (const o of offers) {
@@ -67,7 +67,9 @@ export default async function ComparePage() {
           </p>
         </header>
 
-        {rows.length === 0 ? (
+        {offersError ? (
+          <ReadError what="Provider comparison" />
+        ) : rows.length === 0 ? (
           <EmptyState title="Nothing to compare">
             No currently verified free offer is available to compare.
           </EmptyState>
@@ -213,7 +215,7 @@ export default async function ComparePage() {
   );
 }
 
-type Offer = Awaited<ReturnType<typeof getLiveOffers>>[number];
+type Offer = OfferWithProvider;
 
 /**
  * "Yes (some)" rather than a bare yes, because a provider can offer both a

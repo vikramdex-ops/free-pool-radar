@@ -1,5 +1,5 @@
 import { getChanges } from "@/lib/db";
-import { envelope } from "@/lib/publicData";
+import { envelope, readErrorResponse } from "@/lib/publicData";
 import { iso, stampUTC } from "@/lib/format";
 
 export const revalidate = 300;
@@ -42,7 +42,8 @@ export async function GET(request: Request) {
     );
   }
 
-  const all = await getChanges(limit);
+  const { data: all, error: changesError } = await getChanges(limit);
+  if (changesError) return readErrorResponse("changes");
   const rows = type ? all.filter((c) => c.change_type === type) : all;
 
   return envelope(

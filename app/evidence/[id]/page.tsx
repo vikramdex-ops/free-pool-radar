@@ -6,6 +6,7 @@ import {
   getObservationsForOffer,
   getOffer,
 } from "@/lib/db";
+import { ReadError } from "@/components/ui";
 import {
   CHANGE_LABEL,
   FIELD_LABEL,
@@ -27,7 +28,8 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const offer = await getOffer(Number(id));
+  const { data: offer, error: offerError } = await getOffer(Number(id));
+  if (offerError) return { title: "Evidence unavailable" };
   if (!offer) return { title: "Evidence not found" };
   return {
     title: `Evidence — ${offer.provider?.name ?? "provider"} ${offer.model_label}`,
@@ -60,13 +62,23 @@ export default async function EvidencePage({
   if (!Number.isFinite(offerId)) notFound();
 
   const now = Date.now();
-  const offer = await getOffer(offerId);
+  const { data: offer, error: offerError } = await getOffer(offerId);
+  if (offerError) {
+    return (
+      <main id="main" className="wrap">
+        <div className="sect">
+          <ReadError what={`Evidence for offer ${offerId}`} />
+        </div>
+      </main>
+    );
+  }
   if (!offer) notFound();
 
-  const [observations, changes] = await Promise.all([
-    getObservationsForOffer(offerId),
-    getChangesForOffer(offerId),
-  ]);
+  const [{ data: observations }, { data: changes, error: changesError }] =
+    await Promise.all([
+      getObservationsForOffer(offerId),
+      getChangesForOffer(offerId),
+    ]);
 
   const limit = quota(offer);
   const verified = offer.last_verified_at
@@ -235,7 +247,9 @@ export default async function EvidencePage({
           ) : null}
         </div>
 
-        {changes.length === 0 ? (
+        {changesError ? (
+          <ReadError what="History for this route" />
+        ) : changes.length === 0 ? (
           <div className="empty">
             <p className="empty-title">No recorded changes</p>
             <p>

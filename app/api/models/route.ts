@@ -1,12 +1,13 @@
 import { getModels } from "@/lib/db";
-import { envelope } from "@/lib/publicData";
+import { envelope, readErrorResponse } from "@/lib/publicData";
 import { iso } from "@/lib/format";
 
 export const revalidate = 300;
 
 /** GET /api/models — every model seen on a free route (§37). */
 export async function GET() {
-  const models = await getModels();
+  const { data: models, error: modelsError } = await getModels();
+  if (modelsError) return readErrorResponse("models");
   return envelope(
     models.map((m) => ({
       id: m.id,
