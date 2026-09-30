@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { OfferLedger } from "@/components/Ledger";
 import { EvidenceLink, FreshnessIndicator, ReadError, StatusBadge } from "@/components/ui";
+import { JsonLd, SITE_URL } from "@/components/JsonLd";
 import {
   getChanges,
   getOffersForProvider,
@@ -85,6 +86,14 @@ export default async function ProviderPage({
 
   return (
     <>
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          name: provider.name,
+          url: provider.official_url || `${SITE_URL}/providers/${provider.slug}`,
+        }}
+      />
       <main id="main" className="wrap">
         <header className="page-head">
           <p className="label">

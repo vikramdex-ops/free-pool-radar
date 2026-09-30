@@ -8,6 +8,7 @@ import {
 } from "@/lib/db";
 import { ReadError } from "@/components/ui";
 import { truncateDescription } from "@/lib/metadata";
+import { JsonLd, SITE_URL } from "@/components/JsonLd";
 import {
   CHANGE_LABEL,
   FIELD_LABEL,
@@ -89,6 +90,15 @@ export default async function EvidencePage({
     : null;
 
   return (
+    <>
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "WebPage",
+          name: `Evidence — ${offer.provider?.name ?? "provider"} ${offer.model_label}`,
+          url: `${SITE_URL}/evidence/${offer.id}`,
+        }}
+      />
     <main id="main" className="wrap">
       <header className="page-head">
         <p className="label">Evidence</p>
@@ -358,5 +368,6 @@ export default async function EvidencePage({
         </section>
       ) : null}
     </main>
+    </>
   );
 }

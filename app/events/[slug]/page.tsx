@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { EvidenceLink, PoolMeter, ReadError, StatusBadge } from "@/components/ui";
+import { JsonLd, SITE_URL } from "@/components/JsonLd";
 import { getEvent } from "@/lib/db";
 import { truncateDescription } from "@/lib/metadata";
 import {
@@ -66,6 +67,16 @@ export default async function EventPage({
 
   return (
     <>
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "Event",
+          name: event.name,
+          url: `${SITE_URL}/events/${event.slug}`,
+          ...(event.start_at ? { startDate: event.start_at } : null),
+          ...(event.end_at ? { endDate: event.end_at } : null),
+        }}
+      />
       <main id="main" className="wrap">
         <header className="page-head">
           <p className="label">

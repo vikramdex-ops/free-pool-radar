@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Registry } from "@/components/Registry";
 import { ReadError } from "@/components/ui";
+import { JsonLd, SITE_URL } from "@/components/JsonLd";
 import { getProviders } from "@/lib/db";
 
 export const revalidate = 300;
@@ -18,6 +19,19 @@ export default async function ProvidersPage() {
   const { data: providers, error: providersError } = await getProviders();
   return (
     <>
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "ItemList",
+          name: "Providers tracked for free AI access",
+          itemListElement: providers.map((p, i) => ({
+            "@type": "ListItem",
+            position: i + 1,
+            name: p.name,
+            url: `${SITE_URL}/providers/${p.slug}`,
+          })),
+        }}
+      />
       <main id="main" className="wrap">
         <header className="page-head">
           <p className="label">Index</p>

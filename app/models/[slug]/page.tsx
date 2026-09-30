@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { EmptyState, EvidenceLink, ReadError, StatusBadge } from "@/components/ui";
+import { JsonLd, SITE_URL } from "@/components/JsonLd";
 import {
   getModel,
   getModels,
@@ -62,6 +63,14 @@ export default async function ModelPage({
 
   return (
     <>
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "WebPage",
+          name: `${model.display_name} free API access`,
+          url: `${SITE_URL}/models/${model.slug}`,
+        }}
+      />
       <main id="main" className="wrap">
         <header className="page-head">
           <p className="label">
