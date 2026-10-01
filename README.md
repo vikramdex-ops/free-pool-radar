@@ -1,5 +1,6 @@
 # Free Pool Radar
 
+[![CI](https://github.com/vikramdex-ops/free-pool-radar/actions/workflows/ci.yml/badge.svg)](https://github.com/vikramdex-ops/free-pool-radar/actions/workflows/ci.yml)
 [![Live site](https://img.shields.io/badge/live-free--pool--radar-000000?style=flat-square&logo=vercel&logoColor=white)](https://free-pool-radar.vercel.app)
 [![Next.js](https://img.shields.io/badge/Next.js-16-000000?style=flat-square&logo=nextdotjs&logoColor=white)](https://nextjs.org)
 [![Supabase](https://img.shields.io/badge/Supabase-Postgres-3ECF8E?style=flat-square&logo=supabase&logoColor=white)](https://supabase.com)
@@ -199,7 +200,7 @@ MIT licence (code). Collected data: CC0 1.0 Universal. Provider and model names 
 
 ## Contributing
 
-Fork the repo, make your changes in a branch, and open a pull request. Do not add a green build badge — there is no CI. Do not add a star count — there is none. Do not add ranking language; all orders are named for what they sort by, and missing values are pushed last.
+Fork the repo, make your changes in a branch, and open a pull request. CI runs on every pull request and on every push to `main`: it checks that your branch merges cleanly into `main`, typechecks, builds, and runs the offline checks in `scripts/`. Do not add a star count — there is none. Do not add ranking language; all orders are named for what they sort by, and missing values are pushed last.
 
 If you add a figure, date it: `as observed 2026-09-30` or drop it.
 

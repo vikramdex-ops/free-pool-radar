@@ -229,6 +229,31 @@ discovery candidates, 12 sources.
 
 ## 7. Outstanding work
 
+### CI exists now, and it is deliberately secretless
+
+`.github/workflows/ci.yml` runs on every pull request and every push to `main`.
+It checks four things, in this order, none of which need a credential:
+
+1. **Mergeability** — attempts a real merge of `origin/main` into the branch and
+   fails if it conflicts. This is the check that would have prevented the
+   2026-09-30 near-disaster, where three stale branches would each have merged
+   "cleanly" while deleting the licence files, sitemap, CSP config, login
+   throttle, JSON-LD and seven test scripts.
+2. `npx tsc --noEmit`
+3. Seven offline checks in `scripts/` (see `scripts/CI-SCOPE.md` for which and why)
+4. `npx next build`
+
+There are **no secrets in the workflow**, and that is the point: a CI job that
+needs a database credential is a job that eventually leaks one. The two checks
+that need Supabase — `test-provider-filter.mjs` and `test-read-errors.mjs` —
+stay local and are verified against the deployed URL instead.
+
+What CI cannot do: confirm a migration was actually applied. Migration 0013 sat
+merged and green in CI terms for hours while the throttle silently failed open.
+If your fix adds a file under `supabase/migrations/`, say so in your report and
+do not describe it as working until you have confirmed the database objects
+exist. That gap is structural, not fixable with a workflow.
+
 ### Repo state: one branch, nothing in flight
 
 `origin/main` is the only remote branch. Every working branch has been deleted
