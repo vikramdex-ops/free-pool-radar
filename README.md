@@ -208,4 +208,4 @@ Repository description: *A live radar of genuinely free AI inference — unranke
 
 GitHub topics you may add: `free-ai`, `api-tracker`, `open-data`, `postgres`, `vercel`. Do not add `best`, `top`, or `ranking`.
 
-Do not merge without Stark's approval. Do not add a LICENSE file without Stark's approval. Do not set any finding to `fixed` unless the change is merged and verified.
+A change is not done until it is merged and verified against the deployed site.
