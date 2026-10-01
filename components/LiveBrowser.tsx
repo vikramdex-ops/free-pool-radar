@@ -16,8 +16,10 @@ import { OfferLedger } from "./Ledger";
  * Sorting is a *view order*, never a judgement. §3 forbids ranking providers
  * and §32 says so explicitly, so the options are named for what they sort by —
  * "recently verified", "largest pool" — and never "best" or "top". The default
- * order is newest verification first, because that is the order in which stale
- * claims surface themselves, not the order in which the strongest offer leads.
+ * order is provider name A-Z: a lookup order that cannot move between sweeps,
+ * because freshness as the default meant every sweep reshuffled the page.
+ * Every comparator below falls through to offer id, so no tie group can ever
+ * come back in an arbitrary order.
  *
  * Everything runs on the client: the live set is a few hundred rows and ships
  * with the page, so a reader comparing terms should not wait on a round trip
@@ -25,6 +27,7 @@ import { OfferLedger } from "./Ledger";
  */
 
 type SortKey =
+  | "provider_name"
   | "recently_verified"
   | "recently_discovered"
   | "starting_soon"
@@ -35,6 +38,11 @@ type SortKey =
 
 /** Named for the ordering, never for a quality. See §3 and §32. */
 const SORTS: { key: SortKey; label: string; hint: string }[] = [
+  {
+    key: "provider_name",
+    label: "Provider name",
+    hint: "Alphabetical by provider. The stable default; nothing moves between sweeps.",
+  },
   {
     key: "recently_verified",
     label: "Recently verified",
@@ -191,7 +199,7 @@ export function LiveBrowser({
   const [access, setAccess] = useState<string>("");
   const [fresh, setFresh] = useState<string>("any");
   const [quota, setQuota] = useState<string>("any");
-  const [sort, setSort] = useState<SortKey>("recently_verified");
+  const [sort, setSort] = useState<SortKey>("provider_name");
 
   // The newest change timestamp per offer. Needed for "recently changed", which
   // cannot be derived from the offer row alone — the row holds current state,
@@ -268,42 +276,65 @@ export function LiveBrowser({
     const missing = (v: unknown) => v === null || v === undefined;
 
     switch (sort) {
+      // Code-unit comparison, not localeCompare: server and client runtimes
+      // must agree byte for byte or hydration mismatches. Offer id breaks
+      // every tie, in every order below, so no tie group is ever arbitrary.
+      case "provider_name":
+        return out.sort((a, b) => {
+          const an = a.provider?.name ?? "";
+          const bn = b.provider?.name ?? "";
+          if (an < bn) return -1;
+          if (an > bn) return 1;
+          if ((a.provider?.slug ?? "") < (b.provider?.slug ?? "")) return -1;
+          if ((a.provider?.slug ?? "") > (b.provider?.slug ?? "")) return 1;
+          return a.id - b.id;
+        });
       case "recently_verified":
         return out.sort(
-          (a, b) => hoursSince(b.last_verified_at) - hoursSince(a.last_verified_at),
+          (a, b) =>
+            hoursSince(b.last_verified_at) - hoursSince(a.last_verified_at) ||
+            a.id - b.id,
         );
       case "recently_discovered":
         return out.sort(
           (a, b) =>
             new Date(b.first_discovered_at).getTime() -
-            new Date(a.first_discovered_at).getTime(),
+              new Date(a.first_discovered_at).getTime() || a.id - b.id,
         );
       case "starting_soon":
         return out.sort((a, b) => {
           // Offers with no start date are not "soon", so they go to the end.
-          if (missing(a.start_at)) return missing(b.start_at) ? 0 : 1;
+          if (missing(a.start_at)) return missing(b.start_at) ? a.id - b.id : 1;
           if (missing(b.start_at)) return -1;
-          return new Date(a.start_at!).getTime() - new Date(b.start_at!).getTime();
+          return (
+            new Date(a.start_at!).getTime() - new Date(b.start_at!).getTime() ||
+            a.id - b.id
+          );
         });
       case "largest_pool":
         return out.sort((a, b) => {
-          if (missing(a.pool_size)) return missing(b.pool_size) ? 0 : 1;
+          if (missing(a.pool_size)) return missing(b.pool_size) ? a.id - b.id : 1;
           if (missing(b.pool_size)) return -1;
-          return (b.pool_size ?? 0) - (a.pool_size ?? 0);
+          return (b.pool_size ?? 0) - (a.pool_size ?? 0) || a.id - b.id;
         });
       case "most_models":
         return out.sort(
-          (a, b) => (b.provider?.free_model_count ?? 0) - (a.provider?.free_model_count ?? 0),
+          (a, b) =>
+            (b.provider?.free_model_count ?? 0) - (a.provider?.free_model_count ?? 0) ||
+            a.id - b.id,
         );
       case "recently_changed":
         return out.sort(
-          (a, b) => (lastChange.get(b.id) ?? 0) - (lastChange.get(a.id) ?? 0),
+          (a, b) => (lastChange.get(b.id) ?? 0) - (lastChange.get(a.id) ?? 0) || a.id - b.id,
         );
       case "recently_ended":
         return out.sort((a, b) => {
-          if (missing(a.ended_at)) return missing(b.ended_at) ? 0 : 1;
+          if (missing(a.ended_at)) return missing(b.ended_at) ? a.id - b.id : 1;
           if (missing(b.ended_at)) return -1;
-          return new Date(b.ended_at!).getTime() - new Date(a.ended_at!).getTime();
+          return (
+            new Date(b.ended_at!).getTime() - new Date(a.ended_at!).getTime() ||
+            a.id - b.id
+          );
         });
       default:
         return out;
