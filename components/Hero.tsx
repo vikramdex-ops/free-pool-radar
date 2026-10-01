@@ -77,7 +77,7 @@ export function Hero({
               <Link href="/methodology" className="btn">
                 How we verify
               </Link>
-              <Link href="/api/offers" className="btn">
+              <Link href="/api/live" className="btn">
                 Public API
               </Link>
             </div>

@@ -255,11 +255,10 @@ function SiteFooter() {
           <div>
             <p className="label">API</p>
             <ul className="foot-links">
-              <li><Link href="/api/offers">/api/offers</Link></li>
+              <li><Link href="/api/live">/api/live</Link></li>
               <li><Link href="/api/providers">/api/providers</Link></li>
               <li><Link href="/api/models">/api/models</Link></li>
               <li><Link href="/api/changes">/api/changes</Link></li>
-              <li><Link href="/api/live">/api/live</Link></li>
             </ul>
           </div>
           <div>
