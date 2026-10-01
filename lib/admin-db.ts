@@ -73,7 +73,8 @@ export async function getSourcesAdmin(): Promise<{
   const { data, error } = await client
     .from("sources")
     .select("*")
-    .order("provider_slug");
+    .order("provider_slug")
+    .order("url");
   if (error) return { data: [], error: error.message };
   return { data: (data ?? []) as AdminSource[], error: null };
 }

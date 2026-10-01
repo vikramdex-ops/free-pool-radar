@@ -335,7 +335,9 @@ export const getStatus = () =>
   readOne<RadarStatus>("radar_status", (q) => q.select("*"));
 
 export const getProviders = () =>
-  read<Provider>("providers", (q) => q.select("*").order("name"));
+  read<Provider>("providers", (q) =>
+    q.select("*").order("name").order("slug"),
+  );
 
 export const getProvider = (slug: string) =>
   readOne<Provider>("providers", (q) => q.select("*").eq("slug", slug));
@@ -346,7 +348,8 @@ export const getLiveOffers = (limit = 500) =>
       .select(OFFER_WITH_PROVIDER)
       .in("status", ["live", "changed", "ending"])
       .order("last_verified_at", { ascending: false, nullsFirst: false })
-      .limit(limit),
+      .limit(limit)
+      .order("id"),
   );
 
 export const getUpcomingOffers = () =>
@@ -354,7 +357,8 @@ export const getUpcomingOffers = () =>
     q
       .select(OFFER_WITH_PROVIDER)
       .eq("status", "upcoming")
-      .order("start_at", { ascending: true, nullsFirst: true }),
+      .order("start_at", { ascending: true, nullsFirst: true })
+      .order("id"),
   );
 
 export const getEndedOffers = (limit = 200) =>
@@ -363,7 +367,8 @@ export const getEndedOffers = (limit = 200) =>
       .select(OFFER_WITH_PROVIDER)
       .eq("status", "ended")
       .order("ended_at", { ascending: false, nullsFirst: false })
-      .limit(limit),
+      .limit(limit)
+      .order("id"),
   );
 
 export const EVENT_WITH_PROVIDER =
@@ -373,7 +378,8 @@ export const getEvents = () =>
   read<RadarEvent>("events", (q) =>
     q
       .select(EVENT_WITH_PROVIDER)
-      .order("start_at", { ascending: true, nullsFirst: true }),
+      .order("start_at", { ascending: true, nullsFirst: true })
+      .order("id"),
   );
 
 export const getEvent = (slug: string) =>
@@ -394,7 +400,8 @@ export const getChanges = (limit = 60) =>
     q
       .select(CHANGE_WITH_SUBJECT)
       .order("detected_at", { ascending: false })
-      .limit(limit),
+      .limit(limit)
+      .order("id"),
   );
 
 export const getTimeline = (limit = 300) =>
@@ -402,12 +409,13 @@ export const getTimeline = (limit = 300) =>
     q
       .select(CHANGE_WITH_SUBJECT)
       .order("detected_at", { ascending: false })
-      .limit(limit),
+      .limit(limit)
+      .order("id"),
   );
 
 export const getModels = (limit = 600) =>
   read<Model>("models", (q) =>
-    q.select("*").order("display_name").limit(limit),
+    q.select("*").order("display_name").order("slug").limit(limit),
   );
 
 export const getModel = (slug: string) =>
@@ -425,7 +433,8 @@ export const getOffersForModelId = (modelIdText: string) =>
     q
       .select(OFFER_WITH_PROVIDER)
       .eq("model_id_text", modelIdText)
-      .order("status"),
+      .order("status")
+      .order("id"),
   );
 
 /**
@@ -447,7 +456,7 @@ export const getOffersForProvider = async (
   if (providerError) return { data: [], error: providerError };
   if (!provider) return { data: [], error: null };
   return read<OfferWithProvider>("offers", (q) =>
-    q.select(OFFER_WITH_PROVIDER).eq("provider_id", provider.id).order("status"),
+    q.select(OFFER_WITH_PROVIDER).eq("provider_id", provider.id).order("status").order("id"),
   );
 };
 
@@ -468,7 +477,8 @@ export const getObservationsForOffer = (offerId: number) =>
       .select("*")
       .eq("offer_id", offerId)
       .order("observed_at", { ascending: false })
-      .limit(10),
+      .limit(10)
+      .order("id"),
   );
 
 /** Every change recorded against one offer. */
@@ -478,9 +488,10 @@ export const getChangesForOffer = (offerId: number) =>
       .select(CHANGE_WITH_SUBJECT)
       .eq("offer_id", offerId)
       .order("detected_at", { ascending: false })
-      .limit(50),
+      .limit(50)
+      .order("id"),
   );
 
 /** Source health is internal (§51), so it is only read on the admin route. */
 export const getSources = () =>
-  read<Source>("sources", (q) => q.select("*").order("provider_slug"));
+  read<Source>("sources", (q) => q.select("*").order("provider_slug").order("url"));

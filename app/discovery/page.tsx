@@ -97,7 +97,8 @@ export default async function DiscoveryPage({
   let query = client
     .from("discovery_candidates")
     .select("*")
-    .order("discovered_at", { ascending: false });
+    .order("discovered_at", { ascending: false })
+    .order("id", { ascending: false });
   if (wantStatus) query = query.eq("status", wantStatus);
   if (wantKind) query = query.eq("kind", wantKind);
 
@@ -107,6 +108,7 @@ export default async function DiscoveryPage({
       .from("discovery_candidate_decisions")
       .select("id,candidate_id,from_status,to_status,note,decided_at")
       .order("decided_at", { ascending: false })
+      .order("id", { ascending: false })
       .limit(80),
   ]);
 

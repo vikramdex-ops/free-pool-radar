@@ -47,10 +47,17 @@ export default async function ComparePage() {
     byProvider.set(slug, row);
   }
 
-  // Providers with the most free routes first — a count, not a judgement.
-  const rows = [...byProvider.values()].sort(
-    (a, b) => b.offers.length - a.offers.length,
-  );
+  // One row per provider, in lookup order. Code-unit comparison (never
+  // localeCompare) so server and client runtimes agree byte for byte.
+  // Arranging by route count would move rows whenever data moves; a count
+  // is displayed, never used as an order.
+  const rows = [...byProvider.values()].sort((a, b) => {
+    if (a.name < b.name) return -1;
+    if (a.name > b.name) return 1;
+    if (a.slug < b.slug) return -1;
+    if (a.slug > b.slug) return 1;
+    return 0;
+  });
 
   return (
     <>
@@ -59,11 +66,12 @@ export default async function ComparePage() {
           <p className="label">Compare</p>
           <h1 className="page-title">Side by side</h1>
           <p className="page-lede">
-            Every provider with at least one currently usable free route,
-            arranged by how many free routes it publishes. That is a count, not
-            a judgement: there is no score, no total, and no winner, because
-            whether a shared pool or a rate-limited cardless tier suits you
-            depends on what you are building.
+            Every provider with at least one currently usable free route, in
+            alphabetical order so the table never rearranges itself between
+            sweeps. That is a lookup order, not a judgement: there is no
+            score, no total, and no winner, because whether a shared pool or
+            a rate-limited cardless tier suits you depends on what you are
+            building.
           </p>
         </header>
 
