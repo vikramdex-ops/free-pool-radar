@@ -1611,34 +1611,167 @@ Numbers should use monospace or tabular figures.
 
 # 45. MOTION
 
-Motion must feel like instrumentation.
+Motion is instrumentation. It reports state that is already stored, or it
+reveals that an object exists. It never encodes a value, an ordering, a
+magnitude, or a level of importance.
 
-Use:
+If a reader could watch the motion and write down something the stored rows do
+not say, the motion is forbidden. That is the whole rule. Everything below is
+either an application of it or a record of where the room drew the line.
 
-* slow radar sweep
-* subtle pulse
-* data ticks
-* number transitions
-* countdowns
-* status transitions
-* chart movement
+Ratified by the Design Council, cycle 2026-10-01T07. Where this section and the
+cycle minutes differ, this section governs.
 
-Avoid:
+## The two tests
 
-* excessive bouncing
-* floating blobs
-* cartoon animation
-* constant parallax
-* distracting gradients
-
-Respect:
+Every motion must pass both.
 
 ```text
-prefers-reduced-motion
+1. FROZEN FRAME
+   Freeze any animation mid-frame. The frozen frame must not assert
+   anything the static page does not.
+
+2. STORED COLUMN, OR SELF-INPUT
+   Name the stored column and the query that produces the movement.
+   If you cannot, the motion passes only if it is a pure function of
+   the reader's own input AND meets all three of:
+     (a) it binds no stored value,
+     (b) it is bounded by a constant that does not vary with the data,
+     (c) it returns to a neutral state when the input ceases.
 ```
 
----
+Test 1 came from Prism and Forge independently; Forge strengthened it from
+per-frame to per-element, so a brand-neutral dial may sweep while nothing
+data-bound moves at all.
 
+Test 2 came from Vision, adopted after finding that test 1 has a hole: test 1
+cannot catch input-coupled motion, because a pointer response has no mid-frame
+to freeze. The three clauses in the carve-out are the sharpening. Clause (b) is
+what stops a deflection scaling with a pool size; clause (c) is what stops a
+reader-driven motion persisting into a state.
+
+`RadarDial.tsx` is the case the carve-out exists for. It leans the sweep
+toward the pointer, bounded to a fixed angular range, returning to neutral when
+the pointer leaves, binding no provider value. It passes. Vision originally
+argued for banning it and was overruled; the reasoning is recorded in the
+position history rather than deleted, because a future reader should know the
+objection was made and why it lost.
+
+## Permitted
+
+```text
+LIVENESS
+  The monitoring pipeline is running. The radar sweep, and the live
+  dot in the hero. Both are permitted because continuous collection
+  is the one thing this site can truthfully claim about itself.
+
+CHANGE ARRIVAL
+  A value moved since the reader last looked. Settle: a single
+  background wash on the affected cell, fading, never re-triggered
+  by a data refresh.
+
+BIRTH
+  A value just appeared for the first time. Same treatment as change
+  arrival.
+
+TRANSITION TO STATE
+  A status, filter, theme or disclosure changing. 0.15s to 0.18s.
+  At this duration the reader registers a response, not an event.
+```
+
+## Forbidden
+
+Each with the reason, so a later reader can argue with the ruling rather than
+rediscover it.
+
+```text
+STAGGERED OR CASCADING ENTRANCES
+  A cascade is a reading order, and a reading order is a rank even
+  when the underlying sort is neutral. Unanimous, first round.
+
+COUNT-UP AND COUNT-DOWN FIGURES
+  Counting reads as growth or depletion and implies the previous figure
+  was wrong. Unanimous, first round. Applies to stat tiles, pool
+  remaining, and ticking countdowns.
+
+A POOL THAT VISIBLY DRAINS
+  Animating a shared pool's remaining figure toward zero is scarcity
+  marketing on an offer that is free. It is also the one motion that
+  makes our own failure mode legible as a market event: a pool that
+  is merely unrefreshed looks identical to a pool being consumed, and
+  invariant 3 exists because a failed source must never look like a
+  withdrawal. Raised by Vision against its own earlier leanings.
+
+PULSE OR GLOW ON ANY DATA-BOUND MARK
+  Includes the radar pulse rings, which were 2-1 against removal in
+  the first round and rejected 3-1 after Vision conceded. The pulse was
+  data-bound by construction: it was gated on which providers had a
+  change inside a 20-minute window, so a provider that changed
+  recently had a fact made kinetic. Recorded as a close rejection
+  because the closeness is worth keeping.
+
+SKELETON SHIMMER
+  It implies progress toward a total the page has not measured.
+
+SHAKE OR NUDGE ON A CONTROL
+  Motion on something the reader can press is pressure.
+
+PARALLAX HERO
+  It decides what a reader sees first.
+
+MOTION ON "ENDED" OR ON A STALE BADGE
+  A failed source must never look like a withdrawal. Unanimous.
+
+ANY MOTION ON A VALUE READING "NOT STATED"
+  Animating an absence is the most misleading thing this interface
+  could do.
+```
+
+## The radar dial
+
+The dial survives as a brand object for one reason: no data is bound to its
+angle.
+
+```text
+The sweep runs at constant angular velocity.
+It never slows, stops, or dwells near a provider dot.
+A dwell is an endorsement.
+```
+
+Every other mark on the dial is data-bound and therefore static. Ring radius is
+pool scale, point brightness is verification recency, rim arcs are upcoming
+events. None of them move.
+
+## Rows never move
+
+```text
+No row ever moves, on any list, not only the landing page.
+```
+
+A row reordering because its value changed is a ranking by freshness dressed as
+an update. It is the most useful thing the motion system could do, which is
+exactly why it is forbidden.
+
+A list whose sort key is not unique has unspecified order inside each tie group,
+so rows appear to move arbitrarily and every sweep manufactures more ties. Any
+sort over database rows must therefore be a total order: a unique final
+tiebreaker, always. This applies to every comparator on every list, including
+routes that are not primarily a filtered table.
+
+## Accepted disagreement, recorded
+
+The live dot in the hero is the one piece of interface motion on this site the
+user has actively chosen. It was 2-1 to permit, against a recommendation to
+forbid on the grounds that a pulsing dot is visually indistinguishable from
+urgency. The user kept it.
+
+It is permitted, and it is load-bearing: it is the only motion here that was
+chosen rather than derived. Recorded as an accepted disagreement, not a
+consensus, so a future audit does not report this section as unanimous.
+
+```text
+prefers-reduced-motion is respected site-wide and is not optional.
+```
 # 46. PERFORMANCE
 
 Target:
