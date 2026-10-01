@@ -1,5 +1,7 @@
-# Free Pool Radar
+﻿# Free Pool Radar
 
+
+[![STALE PROBE BADGE](https://example.invalid/probe.svg)](https://example.invalid)
 [![Live site](https://img.shields.io/badge/live-free--pool--radar-000000?style=flat-square&logo=vercel&logoColor=white)](https://free-pool-radar.vercel.app)
 [![Next.js](https://img.shields.io/badge/Next.js-16-000000?style=flat-square&logo=nextdotjs&logoColor=white)](https://nextjs.org)
 [![Supabase](https://img.shields.io/badge/Supabase-Postgres-3ECF8E?style=flat-square&logo=supabase&logoColor=white)](https://supabase.com)
