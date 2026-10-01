@@ -28,7 +28,7 @@ export function Registry({ providers }: { providers: Provider[] }) {
             <th scope="col">Provider</th>
             <th scope="col">Type</th>
             <th scope="col">Country</th>
-            <th scope="col">Free model ids</th>
+            <th scope="col">Free models listed</th>
             <th scope="col">Live offers</th>
             <th scope="col">Status</th>
             <th scope="col">Official site</th>

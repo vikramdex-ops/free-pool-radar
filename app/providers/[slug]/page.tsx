@@ -39,7 +39,7 @@ export async function generateMetadata({
   const models = provider.free_model_count;
   const parts = [
     `${provider.name} free AI API`,
-    models ? `${models} free model ids` : null,
+    models ? `${models} free models listed` : null,
     live ? `${live} live free offers` : null,
   ].filter(Boolean);
 
@@ -147,7 +147,7 @@ export default async function ProviderPage({
 
             <dl className="facts">
               <div>
-                <dt className="label">Free model ids</dt>
+                <dt className="label">Free models listed</dt>
                 <dd className="mono">
                   {provider.free_model_count > 0
                     ? num(provider.free_model_count)
