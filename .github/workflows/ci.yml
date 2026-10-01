@@ -46,6 +46,13 @@ jobs:
       # review or a passing build does not.
       - name: Mergeability against main
         run: |
+          # A trial merge still needs an author and a committer. Without these
+          # the step dies with "Committer identity unknown" BEFORE it attempts
+          # the merge, and the job then reports the branch as unmergeable - a
+          # false failure with nothing to do with the branch. Repo-local, not
+          # --global, so nothing is written to the runner's home directory.
+          git config user.name  ci
+          git config user.email ci@localhost
           git fetch --no-tags origin main
           if ! git merge --no-commit --no-ff origin/main; then
             echo "::error::This branch cannot be merged into main cleanly."
