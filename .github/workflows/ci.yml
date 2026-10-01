@@ -1,0 +1,90 @@
+name: CI
+
+# Purpose, in one line: a merged pull request is a claim, not evidence.
+# Migration 0013 sat on main for hours with the admin login throttle silently
+# failing open because nobody had ever created those functions in the database,
+# and nothing in this repository was in a position to notice. These checks
+# catch the class of failure where the code compiles but the change is stale,
+# conflicting, or was never actually applicable.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A newer push to the same ref makes the older run irrelevant.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Typecheck, build and offline checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history so the mergeability check below can fetch main.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      # The failure that cost the most tonight: a branch cut from an old main
+      # merges "cleanly" in a three-way merge while silently reverting
+      # everything merged since. A real merge attempt catches it, where a diff
+      # review or a passing build does not.
+      - name: Mergeability against main
+        run: |
+          git fetch --no-tags origin main
+          if ! git merge --no-commit --no-ff origin/main; then
+            echo "::error::This branch cannot be merged into main cleanly."
+            echo "::error::Rebase onto origin/main before requesting review:"
+            echo "::error::  git fetch origin && git rebase origin/main"
+            git merge --abort || true
+            exit 1
+          fi
+          git merge --abort || true
+
+      # No secrets are configured anywhere in this workflow, deliberately.
+      # Anything that needs the database is out of scope for CI and is
+      # verified against the deployed URL instead. See HANDOVER.md.
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Offline checks
+        run: |
+          set -euo pipefail
+          failed=0
+          for t in \
+            test-nav-affordance \
+            test-login-throttle \
+            test-csp-hash \
+            test-methodology-observations \
+            test-universal-filters \
+            test-sitemap-fresh \
+            test-social-preview
+          do
+            echo "::group::$t"
+            if node "scripts/$t.mjs"; then
+              echo "::endgroup::"
+            else
+              echo "::endgroup::"
+              echo "::error::$t failed"
+              failed=1
+            fi
+          done
+          exit "$failed"
+
+      - name: Build
+        run: npx next build
