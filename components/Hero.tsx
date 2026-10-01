@@ -192,7 +192,7 @@ function buildTickerLines(
     lines.push({
       key: `models-${biggest.provider!.slug}`,
       name: biggest.provider!.name,
-      detail: `${num(biggest.provider!.free_model_count)} free model ids`,
+      detail: `${num(biggest.provider!.free_model_count)} free models listed`,
     });
   }
 
