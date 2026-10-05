@@ -80,7 +80,8 @@ jobs:
             test-methodology-observations \
             test-universal-filters \
             test-sitemap-fresh \
-            test-social-preview
+            test-social-preview \
+            test-abort-covers-body
           do
             echo "::group::$t"
             if node "scripts/$t.mjs"; then

@@ -153,24 +153,50 @@ export interface Collector {
 
 const UA = "free-pool-radar/1.0 (+https://free-pool-radar.vercel.app)";
 
-async function get(url: string, timeoutMs = 15000): Promise<Response> {
+async function get(url: string, timeoutMs = 15000): Promise<TimedResponse> {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
+  const release = () => clearTimeout(t);
   try {
-    return await fetch(url, {
+    const r = await fetch(url, {
       signal: ctrl.signal,
       headers: { "User-Agent": UA, Accept: "application/json,text/html" },
       cache: "no-store",
     });
-  } finally {
-    clearTimeout(t);
+    return { r, release };
+  } catch (e) {
+    release();
+    throw e;
   }
+  // NOTE: no finally-clear here on purpose. On success the timer stays armed
+  // while the caller consumes the body; json()/text() release it afterwards.
+  // A server that sends headers then stalls the body aborts at timeoutMs
+  // instead of hanging a sweep whose collectors run strictly in series with
+  // no aggregate bound (LED-051).
+}
+
+interface TimedResponse {
+  r: Response;
+  release: () => void;
 }
 
 async function json<T>(url: string): Promise<T> {
-  const r = await get(url);
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
-  return (await r.json()) as T;
+  const { r, release } = await get(url);
+  try {
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return (await r.json()) as T;
+  } finally {
+    release();
+  }
+}
+
+async function text(url: string): Promise<{ status: number; body: string }> {
+  const { r, release } = await get(url);
+  try {
+    return { status: r.status, body: await r.text() };
+  } finally {
+    release();
+  }
 }
 
 const freeModel = (
@@ -485,9 +511,8 @@ const apmix: Collector = {
   urls: [{ url: "https://apmix.ai/event", type: "rsc", priority: 1 }],
   collect: async () => {
     const url = "https://apmix.ai/event";
-    const r = await get(url);
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const html = await r.text();
+    const { status, body: html } = await text(url);
+    if (status < 200 || status >= 300) throw new Error(`HTTP ${status}`);
 
     // The event state is embedded in the Next.js RSC flight payload. Read the
     // fields directly rather than brace-matching a string full of escapes.
