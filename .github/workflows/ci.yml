@@ -78,6 +78,7 @@ jobs:
             test-login-throttle \
             test-csp-hash \
             test-methodology-observations \
+            test-methodology-endings \
             test-universal-filters \
             test-sitemap-fresh \
             test-social-preview \
