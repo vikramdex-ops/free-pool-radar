@@ -8,7 +8,9 @@
  * display order on the page, not a rank.
  */
 
-export const SITE_URL = "https://free-pool-radar.vercel.app";
+import { SITE_URL } from "@/lib/site";
+
+export { SITE_URL };
 
 /**
  * The canonical public repository. Kept beside SITE_URL so the live footer,

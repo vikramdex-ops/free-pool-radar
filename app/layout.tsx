@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { themeInitScript } from "@/lib/theme";
+import { SITE_URL } from "@/lib/site";
 import { JsonLd, websiteSchema } from "@/components/JsonLd";
 import { SiteNav } from "@/components/SiteNav";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -9,7 +10,7 @@ const SITE_DESCRIPTION =
   "Live tracker of free AI inference pools: quotas, card rules, verification times, official sources and withdrawn history.";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://free-pool-radar.vercel.app"),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "Free Pool Radar — every free AI inference pool, tracked live",
     template: "%s · Free Pool Radar",

@@ -18,7 +18,7 @@ import {
  * rendered as an empty result — and here, never as a 500 either).
  */
 
-const SITE = "https://free-pool-radar.vercel.app";
+import { SITE_URL as SITE } from "@/lib/site";
 
 /**
  * Force-dynamic on purpose (invariant 8, §76). Without this the App Router
