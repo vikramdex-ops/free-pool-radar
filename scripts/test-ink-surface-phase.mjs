@@ -55,23 +55,41 @@ if (token) {
 }
 
 // Every rule that transitions ink on interaction must carry its surface.
-const RULES = [".link", ".btn", ".filter", ".nav-link", ".theme-toggle"];
-for (const sel of RULES) {
+// Two groups, because they fail for different reasons and only one of them was
+// the original defect.
+//
+// CHROME: rules that transition ink on interaction. These snapped because they
+// moved colour without their surface. Measured fixed against production 2026-10-05.
+//
+// SURFACES: elements that paint an opaque background and take their text colour
+// from inheritance. These were never in the original list because they never
+// needed a hover transition - which is exactly why they were missed. Their ink
+// comes from body's fade while their surface snapped, so they are the residual
+// half of the same defect. Measured at 1.17:1 on article.panel.offer-card before
+// these declarations existed.
+const CHROME = [".link", ".btn", ".filter", ".nav-link", ".theme-toggle"];
+const SURFACES = [".panel", ".panel-quiet", ".chip", ".tbl-wrap", ".tbl th", ".tbl td"];
+
+function assertTransitions(sel, why) {
   const escaped = sel.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const m = css.match(new RegExp(`${escaped}\\s*\\{[^}]*?transition:([^;]*);`));
+  // .tbl th and .tbl td are compound selectors; the escaped form still matches.
+  const m = css.match(new RegExp(`(?:^|[\\s,}])${escaped}\\s*[,{][^}]*?transition:([^;]*);`));
   const transition = m ? m[1] : null;
   const ok =
     transition !== null &&
     /background-color/.test(transition) &&
-    /var\(--t-dur\)|0\.15s/.test(transition);
+    /var\(--t-dur\)|0\.1[5-8]s/.test(transition);
   check(
-    `${sel} transitions surface with ink`,
+    `${sel} transitions its surface with the ink (${why})`,
     ok,
     transition === null
-      ? "no transition declaration found"
-      : `transition is "${transition.trim()}" - ink moves without its surface`,
+      ? "no transition declaration found on this rule"
+      : `transition is "${transition.trim()}" - the surface can snap while inherited ink is mid-fade`,
   );
 }
+
+for (const sel of CHROME) assertTransitions(sel, "chrome");
+for (const sel of SURFACES) assertTransitions(sel, "opaque surface on inherited ink");
 
 // The glyph was the only other violator of the duration vocabulary, at 0.25s.
 const glyph = css.match(/\.theme-glyph\s+svg\s*\{[^}]*?transition:\s*([^;]*);/);
