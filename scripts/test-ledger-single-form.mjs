@@ -2,14 +2,14 @@
 //
 // Measured before this change: at 1200px the home ledger painted 6 cards AND
 // 12 table rows — two renderings of the same twelve offers under one caption.
-// Below 900px the cards are the fallback and the table hides; at and above
-// 900px the table is the list and the cards hide.
 //
-// This is a SOURCE assertion: it proves the CSS keeps the two forms mutually
-// exclusive, that the narrow count lives outside the hidden table, and that
-// exactly the page with no other surviving count opts into it. It does not
-// measure painted pixels — that needs a browser, and a stylesheet that shows
-// both forms at one width will paint both whatever the TSX says.
+// Honest label: this checks the partition is total, not that the page
+// paints. Nobody here can currently measure a fractional viewport, so the
+// band between two thresholds closes on arithmetic plus this assertion —
+// and this assertion is what is checking it. A test that asserts both
+// thresholds are present cannot fail on this defect, because both being
+// present IS the failing state; so this test asserts the two media queries
+// are logical complements instead.
 //
 // Run: node scripts/test-ledger-single-form.mjs (static; needs no server).
 import { readFileSync } from "node:fs";
@@ -51,28 +51,41 @@ function mediaBlock(cssText, query) {
   assert.fail(`${query} block never closes`);
 }
 
-// 1. Below 900px the table hides and the cards survive.
-check("narrow hides the table, keeps the cards", () => {
-  const narrow = mediaBlock(css, "@media (max-width: 900px)");
-  assert.match(narrow, /\.ledger-table\s*\{\s*display:\s*none;\s*\}/);
-  assert.equal(
-    /\.ledger-cards\s*\{\s*display:\s*none/.test(narrow),
-    false,
-    "the narrow block hides the cards too, leaving no list at all",
+// The partition is total: exactly one threshold N, stated once, with the
+// second rule as its complement. One max-width: N hides the table; one
+// not-all-and max-width: N with the same N hides the cards and the narrow
+// count. Two integer thresholds (max-width: 900px plus min-width: 901px)
+// leave the band (900, 901) unarbitrated, where both forms paint — so any
+// min-width second threshold fails here, including min-width: 901px.
+check("the two ledger rules are logical complements", () => {
+  const queries = [...css.matchAll(/@media\s+([^{\n]+)\{/g)].map((m) => m[1].trim());
+  const maxRules = queries.filter((q) => /^\(max-width:\s*(\d+)px\)$/.test(q));
+  assert.equal(maxRules.length, 1, `expected one max-width rule, found ${maxRules.length}`);
+  const n = maxRules[0].match(/(\d+)px/)[1];
+  const complements = queries.filter(
+    (q) => q === `not all and (max-width: ${n}px)`,
+  );
+  assert.equal(complements.length, 1, `expected one complement rule for ${n}px, found ${complements.length}`);
+  // Other breakpoints in this file use min-width for unrelated components;
+  // what is forbidden is a min-width second threshold for THIS breakpoint,
+  // which re-opens the unarbitrated band (or, at the same N, a width where
+  // nothing paints).
+  const secondIntegers = queries.filter((q) => /\(min-width:\s*90[01]px\)/.test(q));
+  assert.deepEqual(
+    secondIntegers,
+    [],
+    "a min-width second threshold leaves an unarbitrated band",
   );
 });
 
-// 2. At and above 900px the cards hide — the half that was missing, and the
-//    whole defect.
-check("wide hides the cards", () => {
-  const wide = mediaBlock(css, "@media (min-width: 901px)");
+// The table hides inside the max-width rule and the cards hide inside the
+// complement — the complement alone proves nothing unless each rule hides
+// its own form.
+check("each rule hides its own form", () => {
+  const narrow = mediaBlock(css, "@media (max-width: 900px)");
+  assert.match(narrow, /\.ledger-table\s*\{\s*display:\s*none;\s*\}/);
+  const wide = mediaBlock(css, "@media not all and (max-width: 900px)");
   assert.match(wide, /\.ledger-cards\s*\{\s*display:\s*none;\s*\}/);
-});
-
-// 3. The narrow count hides where the caption is visible, so the number is
-//    never stated twice.
-check("the narrow count hides where the caption shows", () => {
-  const wide = mediaBlock(css, "@media (min-width: 901px)");
   assert.match(wide, /\.ledger-narrow-count\s*\{\s*display:\s*none;\s*\}/);
 });
 
