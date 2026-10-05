@@ -241,9 +241,16 @@ const openrouter: Collector = {
   collect: async () => {
     const url = "https://openrouter.ai/api/v1/models";
     const j = await json<{ data: OpenRouterModel[] }>(url);
+    // Deliberate non-zero default for absent prices, mirroring the anyrouter
+    // collector in this file (?? 1) and extended to '' which Number() also
+    // reads as 0: a price that is null, undefined or empty is not a published
+    // zero and must not read as free (LED-053).
+    const priceOrOne = (v: unknown) =>
+      v === null || v === undefined || v === "" ? 1 : v;
     const zero = j.data.filter(
       (m) =>
-        Number(m.pricing?.prompt) === 0 && Number(m.pricing?.completion) === 0,
+        Number(priceOrOne(m.pricing?.prompt)) === 0 &&
+        Number(priceOrOne(m.pricing?.completion)) === 0,
     );
     return {
       offers: zero.map((m) =>
