@@ -86,6 +86,7 @@ jobs:
             test-sponsors-pool-validation
             test-abort-covers-body
             test-apmix-null-not-zero
+            test-apmix-window-guard
           do
             echo "::group::$t"
             if node "scripts/$t.mjs"; then
