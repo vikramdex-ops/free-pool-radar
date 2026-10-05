@@ -493,8 +493,11 @@ export function LiveBrowser({
         {activeCount > 0 ? (
           <>
             {" · "}
+            {/* Amended responsive sentence: where filters hide content the
+                page carries a control that reaches the full set, and the
+                control states the population it reaches. */}
             <button type="button" className="link-ev" onClick={reset}>
-              Clear
+              Show all {offers.length}
             </button>
           </>
         ) : null}

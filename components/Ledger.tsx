@@ -61,18 +61,23 @@ export function OfferLedger({
   const shown = limit ? offers.slice(0, limit) : offers;
   const hidden = offers.length - shown.length;
 
+  // APR-005: the cards ARE the narrow form of this ledger (the table hides
+  // below 900px), so they render the full shown set with no separate cap. A
+  // hard cap here once meant a narrow reader saw 6 cards under counts
+  // claiming every route. The rendered elements are built once, below, and
+  // every count on this page is read back off that same array — rendered and
+  // counted cannot disagree.
+  const cards = shown.map((o) => <OfferCard key={o.id} offer={o} now={now} />);
+  const renderedCount = cards.length;
+
   return (
     <div className="ledger">
-      {/* APR-005: cards render the full shown set, with no separate cap. A
-          hard 6 here meant a narrow reader saw 6 cards under counts claiming
-          every route, while the caption stating the count hides below 900px.
+      {/* APR-005: cards render the full shown set, with no separate cap.
           Rendered and counted are the same array now, so they cannot
           disagree: /live's filter count and the table caption both describe
           exactly these cards. */}
       <div className="ledger-cards">
-        {shown.map((o) => (
-          <OfferCard key={o.id} offer={o} now={now} />
-        ))}
+        {cards}
       </div>
 
       <div className="tbl-wrap ledger-table">
@@ -170,7 +175,12 @@ export function OfferLedger({
       </div>
 
       {hidden > 0 ? (
+        // Capped preview (the home page). This line sits outside the table,
+        // so it stays visible below 900px where the caption hides: a narrow
+        // reader gets the rendered count AND the control that reaches the
+        // rest, both stated against the same rendered array.
         <p className="annot" style={{ marginTop: "1rem" }}>
+          Showing {renderedCount} of {offers.length} free routes here.{" "}
           {num(hidden)} further free route{hidden === 1 ? "" : "s"} not shown
           here.{" "}
           <Link href="/live" className="link">
