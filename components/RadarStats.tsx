@@ -30,7 +30,7 @@ export function HeroStats({
   withdrawn,
 }: {
   modelIds: number;
-  /** Rows in the models table, which is a larger population than distinct ids. */
+  /** Rows carrying a model id: the population the distinct-id figure is drawn from. */
   modelRows: number;
   cardlessProviders: number;
   liveProviders: number;
@@ -47,7 +47,7 @@ export function HeroStats({
     {
       v: num(modelIds),
       l: "Free model ids",
-      p: `distinct ids across ${num(modelRows)} model rows on free routes`,
+      p: `distinct ids across ${num(modelRows)} rows carrying a model id on free routes`,
     },
     {
       v: num(cardlessProviders),

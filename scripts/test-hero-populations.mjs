@@ -199,13 +199,25 @@ check(
   },
 );
 
-// 6. The distinct-id count and the row count must come from the same offers
-//    array, or "distinct ids across N rows" could describe two different sets.
+// 6. CEO-R01: the distinct-id count and the row count must share one
+//    population — the rows carrying a model id. Pairing the distinct ids with
+//    offers.length compared two different populations (rows with and without a
+//    model id), so the page must derive both from model_id_text and pass the
+//    filtered count, never offers.length.
 check(
   "distinct ids and row count share one population",
   () => {
     assert.match(page, /const modelIds = new Set\(\s*\n?\s*offers\.map/);
-    assert.match(page, /modelRows:\s*offers\.length/);
+    assert.match(page, /modelRows:\s*modelRowsWithId/);
+    assert.match(
+      page,
+      /modelRowsWithId = offers\.filter\(\(o\) => Boolean\(o\.model_id_text\)\)/,
+    );
+    assert.equal(
+      /modelRows:\s*offers\.length/.test(page),
+      false,
+      "modelRows still uses the whole-row denominator",
+    );
   },
 );
 

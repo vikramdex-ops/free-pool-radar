@@ -58,6 +58,10 @@ export default async function Page() {
   const modelIds = new Set(
     offers.map((o) => o.model_id_text).filter((m): m is string => Boolean(m)),
   ).size;
+  // CEO-R01: the denominator behind the distinct-id figure is the rows that
+  // carry a model id, not every row. Pairing the count with offers.length
+  // compared two different populations, so the sentence was false as written.
+  const modelRowsWithId = offers.filter((o) => Boolean(o.model_id_text)).length;
   const cardlessProviders = new Set(
     offers
       .filter((o) => !o.card_required && o.status === "live")
@@ -85,7 +89,7 @@ export default async function Page() {
           now={now}
           stats={{
             modelIds,
-            modelRows: offers.length,
+            modelRows: modelRowsWithId,
             cardlessProviders,
             liveProviders: providers.length,
             liveOffers: offers.filter((o) => o.status === "live").length,

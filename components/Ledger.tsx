@@ -63,8 +63,14 @@ export function OfferLedger({
 
   return (
     <div className="ledger">
+      {/* APR-005: cards render the full shown set, with no separate cap. A
+          hard 6 here meant a narrow reader saw 6 cards under counts claiming
+          every route, while the caption stating the count hides below 900px.
+          Rendered and counted are the same array now, so they cannot
+          disagree: /live's filter count and the table caption both describe
+          exactly these cards. */}
       <div className="ledger-cards">
-        {shown.slice(0, 6).map((o) => (
+        {shown.map((o) => (
           <OfferCard key={o.id} offer={o} now={now} />
         ))}
       </div>
