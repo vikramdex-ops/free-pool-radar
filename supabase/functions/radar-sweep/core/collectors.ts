@@ -616,6 +616,13 @@ const sponsoredtokens: Collector = {
       json<{ sponsors: StSponsor[] }>("https://sponsoredtokens.com/api/sponsors"),
       json<{ poolPaused?: boolean }>("https://sponsoredtokens.com/api/flags"),
     ]);
+    // LED-052: absence is an expected shape (the type marks it optional), but
+    // an absent flag must never read as "not paused" - that invents live from
+    // nothing and un-suspends a stored suspended pool. Fail loudly like the
+    // other collectors do on malformed shape; the prior values stay untouched.
+    if (typeof fl.poolPaused !== "boolean") {
+      throw new Error("pool flags malformed: poolPaused is absent");
+    }
     const list = sp.sponsors || [];
     const cents = (k: "balanceCents" | "lifetimeCents" | "spentCents") =>
       list.reduce((a, b) => a + (b[k] || 0), 0);
