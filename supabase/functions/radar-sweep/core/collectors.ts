@@ -662,6 +662,14 @@ const sponsoredtokens: Collector = {
     if (!Array.isArray(list)) {
       throw new Error("sponsors payload malformed: sponsors is not an array");
     }
+    // LED-052: absence is an expected shape (the type marks it optional), but
+    // an absent flag must never read as "not paused" - that invents live from
+    // nothing and un-suspends a stored suspended pool. Fail loudly like the
+    // other collectors do on malformed shape; the prior values stay untouched.
+    if (typeof fl.poolPaused !== "boolean") {
+      throw new Error("pool flags malformed: poolPaused is absent");
+    }
+    const list = sp.sponsors || [];
     const cents = (k: "balanceCents" | "lifetimeCents" | "spentCents") =>
       list.reduce((a, b) => {
         const v = b[k];
