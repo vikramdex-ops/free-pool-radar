@@ -88,6 +88,7 @@ jobs:
             test-apmix-null-not-zero
             test-apmix-window-guard
             test-poolpaused-absent-throws
+            test-openrouter-null-price
           do
             echo "::group::$t"
             if node "scripts/$t.mjs"; then
