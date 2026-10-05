@@ -45,6 +45,21 @@ import type { NextConfig } from "next";
 const THEME_SCRIPT_HASH =
   "'sha256-Kh3dS4sP6GIngNw9kdvwr0Pt6RxEEpE4EKJhqZ5VrQo='";
 
+/**
+ * Where a report-only violation goes (APR-026, ratified 2026-10-05).
+ *
+ * A report-only policy with no `report-uri` and no `report-to` enforces
+ * nothing AND reports nothing: a violation has nowhere to go, so CIP-003's own
+ * recorded follow-up condition - enforce once no violations are reported - was
+ * unsatisfiable rather than merely unmet. Naming a destination is what makes
+ * the condition checkable.
+ *
+ * `report-uri` is used rather than `report-to` because it needs no companion
+ * `Reporting-Endpoints` header to be honoured and is therefore a real fix on
+ * its own, not a two-part change where one half can be forgotten.
+ */
+const CSP_REPORT_URI = "/api/csp-report";
+
 const CSP_REPORT_ONLY = [
   "default-src 'self'",
   `script-src 'self' ${THEME_SCRIPT_HASH}`,
@@ -56,6 +71,7 @@ const CSP_REPORT_ONLY = [
   "base-uri 'self'",
   "form-action 'self'",
   "object-src 'none'",
+  `report-uri ${CSP_REPORT_URI}`,
 ].join("; ");
 
 const PERMISSIONS_POLICY = [
