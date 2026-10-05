@@ -89,7 +89,14 @@ jobs:
             test-apmix-null-not-zero \
             test-apmix-window-guard \
             test-poolpaused-absent-throws \
-            test-openrouter-null-price
+            test-openrouter-null-price \
+            test-api-alias \
+            test-canonical-dollars \
+            test-free-models-listed \
+            test-observation-source \
+            test-pool-adoption \
+            test-stable-sorts \
+            test-sweep-gate
           do
             echo "::group::$t"
             if node "scripts/$t.mjs"; then
