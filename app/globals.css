@@ -545,13 +545,11 @@ body {
 
 .tick { animation: tick-blink 2.4s steps(1, end) infinite; }
 
-/* A number that just changed gets one brief lift, then settles. */
-@keyframes settle {
-  from { background-color: color-mix(in oklab, var(--t-upcoming) 22%, transparent); }
-  to { background-color: transparent; }
-}
-
-.settle { animation: settle 2.6s ease-out 1; }
+/* ARC-045: the CHANGE ARRIVAL "settle" wash is deleted, not wired.
+   PRODUCT.md:1668-1671 specifies a one-shot wash per session per cell that
+   never re-triggers on a data refresh. Honouring that needs a session store
+   plus a first-paint window across every rendered row, to animate a fact the
+   change feed already prints as text. The declaration had zero consumers. */
 
 /* ==================================================================
    navigation

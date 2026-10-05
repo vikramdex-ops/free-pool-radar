@@ -131,12 +131,15 @@ async function main() {
   await p8.goto(BASE + "/", { waitUntil: "load" });
   const durations = await p8.evaluate(() => {
     const out = [];
-    for (const el of document.querySelectorAll(".radar-sweep, .radar-pulse, .tick, .settle")) {
+    for (const el of document.querySelectorAll(".radar-sweep, .radar-pulse, .tick")) {
       out.push(getComputedStyle(el).animationDuration);
     }
     return out;
   });
-  const motionStopped = durations.every((d) => parseFloat(d) < 0.01);
+  // ARC-045: .settle removed (never had a consumer). The non-empty assertion is
+  // the part that generalises: every() on an empty array is true, so without it
+  // this check would report a green pass while covering nothing at all.
+  const motionStopped = durations.length > 0 && durations.every((d) => parseFloat(d) < 0.01);
   check(
     "Test 8: reduced motion disables animation",
     motionStopped,
