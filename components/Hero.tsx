@@ -37,7 +37,11 @@ export function Hero({
   now: number;
   stats: {
     modelIds: number;
+    /** Rows behind the distinct-id figure, so the population is stated (APR-059). */
+    modelRows: number;
     cardlessProviders: number;
+    liveProviders: number;
+    liveOffers: number;
     sourcesLive: number;
     sourcesTotal: number;
     withdrawn: number;

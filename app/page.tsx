@@ -85,7 +85,10 @@ export default async function Page() {
           now={now}
           stats={{
             modelIds,
+            modelRows: offers.length,
             cardlessProviders,
+            liveProviders: providers.length,
+            liveOffers: offers.filter((o) => o.status === "live").length,
             sourcesLive: sourcesOk,
             sourcesTotal,
             withdrawn: ended.length,
