@@ -101,7 +101,9 @@ jobs:
             test-arc045-settle-removed \
             test-compare-row-identity \
             test-hero-deescalation \
-            test-home-no-replica
+            test-home-no-replica \
+            test-site-origin \
+            test-search-gates
           do
             echo "::group::$t"
             if node "scripts/$t.mjs"; then
