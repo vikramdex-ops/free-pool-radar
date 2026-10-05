@@ -1,14 +1,14 @@
-/**
- * Collector registry (§10).
+﻿/**
+ * Collector registry (Â§10).
  *
  * Every monitored source is a row in the database; the parser that turns a
  * response into normalised intelligence is looked up here by `parser_key`.
  * Adding a provider therefore means inserting a row, not editing a component
- * (§10, §51).
+ * (Â§10, Â§51).
  *
  * Each collector returns normalised facts. It must never invent a number it
  * did not read: an absent field is `null`, which the UI renders as
- * "Not publicly stated" rather than a guess (§9).
+ * "Not publicly stated" rather than a guess (Â§9).
  */
 
 export type Unit =
@@ -153,24 +153,50 @@ export interface Collector {
 
 const UA = "free-pool-radar/1.0 (+https://free-pool-radar.vercel.app)";
 
-async function get(url: string, timeoutMs = 15000): Promise<Response> {
+async function get(url: string, timeoutMs = 15000): Promise<TimedResponse> {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
+  const release = () => clearTimeout(t);
   try {
-    return await fetch(url, {
+    const r = await fetch(url, {
       signal: ctrl.signal,
       headers: { "User-Agent": UA, Accept: "application/json,text/html" },
       cache: "no-store",
     });
-  } finally {
-    clearTimeout(t);
+    return { r, release };
+  } catch (e) {
+    release();
+    throw e;
   }
+  // NOTE: no finally-clear here on purpose. On success the timer stays armed
+  // while the caller consumes the body; json()/text() release it afterwards.
+  // A server that sends headers then stalls the body aborts at timeoutMs
+  // instead of hanging a sweep whose collectors run strictly in series with
+  // no aggregate bound (LED-051).
+}
+
+interface TimedResponse {
+  r: Response;
+  release: () => void;
 }
 
 async function json<T>(url: string): Promise<T> {
-  const r = await get(url);
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
-  return (await r.json()) as T;
+  const { r, release } = await get(url);
+  try {
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return (await r.json()) as T;
+  } finally {
+    release();
+  }
+}
+
+async function text(url: string): Promise<{ status: number; body: string }> {
+  const { r, release } = await get(url);
+  try {
+    return { status: r.status, body: await r.text() };
+  } finally {
+    release();
+  }
 }
 
 const freeModel = (
@@ -241,9 +267,16 @@ const openrouter: Collector = {
   collect: async () => {
     const url = "https://openrouter.ai/api/v1/models";
     const j = await json<{ data: OpenRouterModel[] }>(url);
+    // Deliberate non-zero default for absent prices, mirroring the anyrouter
+    // collector in this file (?? 1) and extended to '' which Number() also
+    // reads as 0: a price that is null, undefined or empty is not a published
+    // zero and must not read as free (LED-053).
+    const priceOrOne = (v: unknown) =>
+      v === null || v === undefined || v === "" ? 1 : v;
     const zero = j.data.filter(
       (m) =>
-        Number(m.pricing?.prompt) === 0 && Number(m.pricing?.completion) === 0,
+        Number(priceOrOne(m.pricing?.prompt)) === 0 &&
+        Number(priceOrOne(m.pricing?.completion)) === 0,
     );
     return {
       offers: zero.map((m) =>
@@ -252,7 +285,7 @@ const openrouter: Collector = {
           offerType: m.id === "openrouter/free" ? "rotating_free_model" : "free_tier",
           rpm: 20,
           evidence: {
-            "pricing": `${url} — prompt and completion both "0"`,
+            "pricing": `${url} â€” prompt and completion both "0"`,
             "rpm": "https://openrouter.ai/docs/api-reference/limits",
           },
           compatibilityAnthropic: false,
@@ -283,7 +316,7 @@ const aihubmix: Collector = {
           compatibilityOpenai: true,
           compatibilityAnthropic: true,
           evidence: {
-            source: `${url} — model id ends in -free`,
+            source: `${url} â€” model id ends in -free`,
             limits: "https://aihubmix.com/models/free",
           },
         }),
@@ -311,7 +344,7 @@ const zen: Collector = {
         freeModel("opencode-zen", m.id, url, {
           offerType: "free_tier",
           rpm: null,
-          evidence: { source: `${url} — id ends in -free` },
+          evidence: { source: `${url} â€” id ends in -free` },
         }),
       ),
       events: [],
@@ -348,7 +381,7 @@ const anyrouter: Collector = {
           offerType: m.id === "anyrouter/free" ? "rotating_free_model" : "free_tier",
           rpd: m.id === "anyrouter/free" ? 10 : null,
           evidence: {
-            source: `${url} — prompt price "0"`,
+            source: `${url} â€” prompt price "0"`,
             ...(upstreams.length
               ? { upstream: `free upstreams: ${upstreams.join(", ")}` }
               : {}),
@@ -391,8 +424,8 @@ const kilo: Collector = {
           keyless: true,
           rpd: 200,
           evidence: {
-            source: `${url} — isFree or -free suffix`,
-            rate: "https://kilo.ai/docs/gateway/authentication — 200 req/hour/IP anonymous",
+            source: `${url} â€” isFree or -free suffix`,
+            rate: "https://kilo.ai/docs/gateway/authentication â€” 200 req/hour/IP anonymous",
           },
         }),
       ),
@@ -428,7 +461,7 @@ const llm7: Collector = {
           tokenLimit: 500000,
           tokenLimitUnit: "tokens",
           evidence: {
-            source: `${url} — tier "turbo"`,
+            source: `${url} â€” tier "turbo"`,
             limits: "https://docs.llm7.io/limits",
           },
         }),
@@ -466,7 +499,7 @@ const pollinations: Collector = {
           apiKeyRequired: false,
           keyless: true,
           compatibilityAnthropic: false,
-          evidence: { source: `${url} — anonymous tier` },
+          evidence: { source: `${url} â€” anonymous tier` },
         }),
       ),
       events: [],
@@ -485,9 +518,8 @@ const apmix: Collector = {
   urls: [{ url: "https://apmix.ai/event", type: "rsc", priority: 1 }],
   collect: async () => {
     const url = "https://apmix.ai/event";
-    const r = await get(url);
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const html = await r.text();
+    const { status: httpStatus, body: html } = await text(url);
+    if (httpStatus < 200 || httpStatus >= 300) throw new Error(`HTTP ${httpStatus}`);
 
     // The event state is embedded in the Next.js RSC flight payload. Read the
     // fields directly rather than brace-matching a string full of escapes.
@@ -499,6 +531,16 @@ const apmix: Collector = {
     const at = flat.indexOf('"initial":{');
     if (at === -1) throw new Error("event payload not found");
     const seg = flat.slice(at, at + 700);
+    // LED-050: a reorder pushing a field outside the window reads identically
+    // to an unpublished field. Tell them apart against a wider window: present
+    // wider but absent here means structural break (throw, like the missing
+    // marker); absent from both means unpublished (null, never 0).
+    const wide = flat.slice(at, at + 4000);
+    for (const k of ["pool", "remaining", "status"]) {
+      if (!seg.includes(`"${k}":`) && wide.includes(`"${k}":`)) {
+        throw new Error(`event field ${k} outside parse window`);
+      }
+    }
 
     const str = (k: string) => {
       const m = seg.match(new RegExp(`"${k}":(null|"(?:[^"\\\\]|\\\\.)*")`));
@@ -511,7 +553,10 @@ const apmix: Collector = {
     };
     const num = (k: string) => {
       const m = seg.match(new RegExp(`"${k}":(-?[\\d.]+)`));
-      return m ? Number(m[1]) : 0;
+      // Absent is null, never 0: an unread field must not read as exhausted.
+      // Absent is null, never 0 (shared with LED-049): an unread field must
+      // not read as exhausted.
+      return m ? Number(m[1]) : null;
     };
 
     const modelId = str("modelId");
@@ -562,8 +607,8 @@ const apmix: Collector = {
         verificationLevel: "official_event_page",
         officialEvidenceUrl: url,
         evidence: {
-          pool: `${url} — pool and remaining read from the published event state`,
-          rpm: "https://apmix.ai/docs — 60 req/min, 120 on Max",
+          pool: `${url} â€” pool and remaining read from the published event state`,
+          rpm: "https://apmix.ai/docs â€” 60 req/min, 120 on Max",
         },
       },
     ];
@@ -574,7 +619,7 @@ const apmix: Collector = {
         // Matches the slug used by supabase/seed.sql, so the researched event
         // and the observed event are the same row rather than two.
         slug: "apmix-community-event",
-        name: "Community event — shared token pool",
+        name: "Community event â€” shared token pool",
         description:
           "One shared pool, every account on any plan, first come first served until it is gone.",
         status: status === "ended" ? "ended" : status === "live" ? "live" : "upcoming",
@@ -584,7 +629,7 @@ const apmix: Collector = {
         poolRemaining: remaining,
         unit: "weighted_tokens",
         models: [modelId],
-        eligibility: "Any account — free, Starter, Pro or Max",
+        eligibility: "Any account â€” free, Starter, Pro or Max",
         requirements: "API key required. No payment method.",
         exhaustionCondition: "Requests answer 403 event_ended once the pool is spent",
         officialUrl: url,
@@ -616,9 +661,29 @@ const sponsoredtokens: Collector = {
       json<{ sponsors: StSponsor[] }>("https://sponsoredtokens.com/api/sponsors"),
       json<{ poolPaused?: boolean }>("https://sponsoredtokens.com/api/flags"),
     ]);
-    const list = sp.sponsors || [];
+    // LED-052: absence is an expected shape (the type marks it optional), but
+    // an absent flag must never read as "not paused" - that invents live from
+    // nothing and un-suspends a stored suspended pool. Fail loudly like the
+    // other collectors do on malformed shape; the prior values stay untouched.
+    if (typeof fl.poolPaused !== "boolean") {
+      throw new Error("pool flags malformed: poolPaused is absent");
+    }
+    // LED-048: an unreadable pool is an error, never a measured zero.
+    // `sp.sponsors || []` would turn a renamed or wrapped key into an empty
+    // list and overwrite a stored dollar balance with 0 while status stays
+    // live, so the shape is validated before anything is totalled.
+    const list = sp.sponsors;
+    if (!Array.isArray(list)) {
+      throw new Error("sponsors payload malformed: sponsors is not an array");
+    }
     const cents = (k: "balanceCents" | "lifetimeCents" | "spentCents") =>
-      list.reduce((a, b) => a + (b[k] || 0), 0);
+      list.reduce((a, b) => {
+        const v = b[k];
+        if (typeof v !== "number" || !Number.isFinite(v)) {
+          throw new Error(`sponsors payload malformed: ${k} is not a number`);
+        }
+        return a + v;
+      }, 0);
     const balance = cents("balanceCents") / 100;
     const lifetime = cents("lifetimeCents") / 100;
     const spent = cents("spentCents") / 100;
@@ -658,8 +723,8 @@ const sponsoredtokens: Collector = {
           verificationLevel: "live_api",
           officialEvidenceUrl: "https://sponsoredtokens.com/sponsors",
           evidence: {
-            balance: "https://sponsoredtokens.com/api/sponsors — sponsor balances",
-            weekly: "https://sponsoredtokens.com/docs — $5/week base, +$5 per referral to $130/week",
+            balance: "https://sponsoredtokens.com/api/sponsors â€” sponsor balances",
+            weekly: "https://sponsoredtokens.com/docs â€” $5/week base, +$5 per referral to $130/week",
           },
         },
       ],
@@ -791,7 +856,7 @@ const joule: Collector = {
           modelId: null,
           modelLabel: j.capacity.models_available.join(", ") || "no model resident",
           offerType: "shared_pool",
-          // Not serving is NOT the same as ended (§13): the pool exists, it is
+          // Not serving is NOT the same as ended (Â§13): the pool exists, it is
           // simply below its service gate.
           status: live ? "live" : "unverified",
           apiKeyRequired: true,
@@ -821,7 +886,7 @@ const joule: Collector = {
           verificationLevel: "live_api",
           officialEvidenceUrl: url,
           evidence: {
-            capacity: `${url} — ${j.capacity.nodes_healthy}/${j.capacity.nodes_total} nodes healthy`,
+            capacity: `${url} â€” ${j.capacity.nodes_healthy}/${j.capacity.nodes_total} nodes healthy`,
             gate: j.readiness.countdown_label,
             feed: `pool feed last updated ${j.updated_at}`,
           },
@@ -857,14 +922,14 @@ const chutes: Collector = {
       (i) =>
         i.pricing?.input_per_million === 0 || /free/i.test(i.tier || ""),
     );
-    // A retired free tier is historical fact, not a live offer (§16, §24).
+    // A retired free tier is historical fact, not a live offer (Â§16, Â§24).
     return {
       offers: free.map((i) =>
         freeModel("chutes", i.slug, url, {
           modelLabel: i.name,
           offerType: "free_tier",
           status: "live",
-          evidence: { source: `${url} — priced at $0` },
+          evidence: { source: `${url} â€” priced at $0` },
         }),
       ),
       events: [],

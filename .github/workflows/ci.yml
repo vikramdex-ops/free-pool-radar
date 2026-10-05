@@ -1,4 +1,4 @@
-name: CI
+﻿name: CI
 
 # Purpose, in one line: a merged pull request is a claim, not evidence.
 # Migration 0013 sat on main for hours with the admin login throttle silently
@@ -83,6 +83,12 @@ jobs:
             test-social-preview \
             test-ink-surface-phase \
             test-csp-report-destination
+            test-sponsors-pool-validation
+            test-abort-covers-body
+            test-apmix-null-not-zero
+            test-apmix-window-guard
+            test-poolpaused-absent-throws
+            test-openrouter-null-price
           do
             echo "::group::$t"
             if node "scripts/$t.mjs"; then
