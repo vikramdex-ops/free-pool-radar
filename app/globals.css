@@ -770,6 +770,29 @@ body {
   color: var(--t-ink);
 }
 
+/* The population sentence under a hero figure (APR-059). A count without the
+   set it was drawn from is the failure this product exists to prevent, and it
+   is small type on purpose: it qualifies the number beside it, it does not
+   compete with it. */
+.hero-stat .hero-stat-pop {
+  margin-top: 0.375rem;
+  font-size: 0.6875rem;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--t-ink-3);
+}
+
+/* The as-of line spans the row rather than sitting in a fifth cell: it applies
+   to every figure, so giving it its own cell would imply it is a fifth figure. */
+.hero-stat-asof {
+  grid-column: 1 / -1;
+}
+.hero-stat-asof dd {
+  font-size: 0.6875rem;
+  font-weight: 400;
+  color: var(--t-ink-3);
+}
+
 /* ---------- radar ---------- */
 
 .hero-dial { display: flex; justify-content: center; }

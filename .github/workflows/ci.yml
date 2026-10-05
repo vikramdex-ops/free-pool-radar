@@ -82,7 +82,8 @@ jobs:
             test-sitemap-fresh \
             test-social-preview \
             test-ink-surface-phase \
-            test-csp-report-destination
+            test-csp-report-destination \
+            test-hero-populations
             test-sponsors-pool-validation
             test-abort-covers-body
             test-apmix-null-not-zero
@@ -103,3 +104,4 @@ jobs:
 
       - name: Build
         run: npx next build
+
