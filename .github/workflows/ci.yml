@@ -96,7 +96,12 @@ jobs:
             test-observation-source \
             test-pool-adoption \
             test-stable-sorts \
-            test-sweep-gate
+            test-sweep-gate \
+            test-admin-gate \
+            test-arc045-settle-removed \
+            test-compare-row-identity \
+            test-hero-deescalation \
+            test-home-no-replica
           do
             echo "::group::$t"
             if node "scripts/$t.mjs"; then
