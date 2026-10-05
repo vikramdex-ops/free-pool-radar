@@ -84,13 +84,13 @@ export default async function ComparePage() {
         ) : (
           <div className="sect" style={{ paddingTop: 0 }}>
             <div className="tbl-wrap">
-              <table className="tbl">
+              <table className="tbl tbl-compare">
                 <caption>
                   {rows.length} providers with live free access
                 </caption>
                 <thead>
                   <tr>
-                    <th scope="col">Dimension</th>
+                    <th scope="col" className="sticky-col">Dimension</th>
                     {rows.map((r) => (
                       <th key={r.slug} scope="col">
                         <Link href={`/providers/${r.slug}`} className="link">
@@ -102,7 +102,7 @@ export default async function ComparePage() {
                 </thead>
                 <tbody>
                   <tr>
-                    <th scope="row" className="label">
+                    <th scope="row" className="label sticky-col">
                       Free routes
                     </th>
                     {rows.map((r) => (
@@ -112,7 +112,7 @@ export default async function ComparePage() {
                     ))}
                   </tr>
                   <tr>
-                    <th scope="row" className="label">
+                    <th scope="row" className="label sticky-col">
                       Card required
                     </th>
                     {rows.map((r) => (
@@ -122,7 +122,7 @@ export default async function ComparePage() {
                     ))}
                   </tr>
                   <tr>
-                    <th scope="row" className="label">
+                    <th scope="row" className="label sticky-col">
                       Subscription required
                     </th>
                     {rows.map((r) => (
@@ -132,7 +132,7 @@ export default async function ComparePage() {
                     ))}
                   </tr>
                   <tr>
-                    <th scope="row" className="label">
+                    <th scope="row" className="label sticky-col">
                       API key required
                     </th>
                     {rows.map((r) => (
@@ -142,7 +142,7 @@ export default async function ComparePage() {
                     ))}
                   </tr>
                   <tr>
-                    <th scope="row" className="label">
+                    <th scope="row" className="label sticky-col">
                       Keyless available
                     </th>
                     {rows.map((r) => (
@@ -152,7 +152,7 @@ export default async function ComparePage() {
                     ))}
                   </tr>
                   <tr>
-                    <th scope="row" className="label">
+                    <th scope="row" className="label sticky-col">
                       OpenAI compatible
                     </th>
                     {rows.map((r) => (
@@ -162,7 +162,7 @@ export default async function ComparePage() {
                     ))}
                   </tr>
                   <tr>
-                    <th scope="row" className="label">
+                    <th scope="row" className="label sticky-col">
                       Anthropic compatible
                     </th>
                     {rows.map((r) => (
@@ -172,7 +172,7 @@ export default async function ComparePage() {
                     ))}
                   </tr>
                   <tr>
-                    <th scope="row" className="label">
+                    <th scope="row" className="label sticky-col">
                       Largest pool
                     </th>
                     {rows.map((r) => (
@@ -182,7 +182,7 @@ export default async function ComparePage() {
                     ))}
                   </tr>
                   <tr>
-                    <th scope="row" className="label">
+                    <th scope="row" className="label sticky-col">
                       Request limits
                     </th>
                     {rows.map((r) => (
@@ -192,7 +192,7 @@ export default async function ComparePage() {
                     ))}
                   </tr>
                   <tr>
-                    <th scope="row" className="label">
+                    <th scope="row" className="label sticky-col">
                       Access types
                     </th>
                     {rows.map((r) => (
@@ -204,7 +204,7 @@ export default async function ComparePage() {
                     ))}
                   </tr>
                   <tr>
-                    <th scope="row" className="label">
+                    <th scope="row" className="label sticky-col">
                       Official site
                     </th>
                     {rows.map((r) => (

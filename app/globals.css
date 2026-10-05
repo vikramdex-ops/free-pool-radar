@@ -1155,6 +1155,24 @@ body {
   background: var(--t-raise);
 }
 
+/* /compare reuses the ledger's sticky-column shape under its own scope, so
+   the dimension label stays put while provider columns scroll under it and
+   a value never becomes an orphan fact. Scoped to .tbl-compare (never bare
+   .tbl) so tables whose columns were never measured keep their layout, and
+   shaped so APR-054's transpose can absorb it later. */
+.tbl-compare .sticky-col {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--t-panel);
+  border-right: 1px solid var(--t-rule);
+}
+
+.tbl-compare thead .sticky-col {
+  z-index: 2;
+  background: var(--t-raise);
+}
+
 /* A long model name is capped and truncated rather than allowed to wrap
    freely. The full value stays available as a title attribute, and on the
    evidence page. */
