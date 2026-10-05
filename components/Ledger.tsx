@@ -61,14 +61,12 @@ export function OfferLedger({
   const shown = limit ? offers.slice(0, limit) : offers;
   const hidden = offers.length - shown.length;
 
-  // APR-005: the cards ARE the narrow form of this ledger (the table hides
+  // APR-005: the cards are the narrow form of this ledger (the table hides
   // below 900px), so they render the full shown set with no separate cap. A
-  // hard cap here once meant a narrow reader saw 6 cards under counts
-  // claiming every route. The rendered elements are built once, below, and
-  // every count on this page is read back off that same array — rendered and
-  // counted cannot disagree.
+  // hard 6 here once meant a narrow reader saw 6 cards under counts claiming
+  // every route. Rendered and counted are the same array, so they cannot
+  // disagree.
   const cards = shown.map((o) => <OfferCard key={o.id} offer={o} now={now} />);
-  const renderedCount = cards.length;
 
   return (
     <div className="ledger">
@@ -176,11 +174,9 @@ export function OfferLedger({
 
       {hidden > 0 ? (
         // Capped preview (the home page). This line sits outside the table,
-        // so it stays visible below 900px where the caption hides: a narrow
-        // reader gets the rendered count AND the control that reaches the
-        // rest, both stated against the same rendered array.
+        // so it survives below 900px where the caption hides: the narrow
+        // reader keeps the count and the control that reaches the rest.
         <p className="annot" style={{ marginTop: "1rem" }}>
-          Showing {renderedCount} of {offers.length} free routes here.{" "}
           {num(hidden)} further free route{hidden === 1 ? "" : "s"} not shown
           here.{" "}
           <Link href="/live" className="link">

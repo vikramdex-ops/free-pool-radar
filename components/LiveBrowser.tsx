@@ -490,12 +490,14 @@ export function LiveBrowser({
         Showing {sorted.length} of {offers.length} free route
         {offers.length === 1 ? "" : "s"}
         {activeCount > 0 ? ` · ${activeCount} filter${activeCount === 1 ? "" : "s"} active` : ""}
-        {activeCount > 0 ? (
+        {activeCount > 0 && sorted.length < offers.length ? (
           <>
             {" · "}
-            {/* Amended responsive sentence: where filters hide content the
+            {/* Amended responsive sentence: where filters withhold rows the
                 page carries a control that reaches the full set, and the
-                control states the population it reaches. */}
+                control states the population it reaches. Hidden while every
+                filtered row is already painted — a control reaching rows on
+                screen is chrome pointing at nothing. */}
             <button type="button" className="link-ev" onClick={reset}>
               Show all {offers.length}
             </button>
