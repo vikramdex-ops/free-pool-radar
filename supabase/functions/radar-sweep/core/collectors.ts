@@ -616,9 +616,22 @@ const sponsoredtokens: Collector = {
       json<{ sponsors: StSponsor[] }>("https://sponsoredtokens.com/api/sponsors"),
       json<{ poolPaused?: boolean }>("https://sponsoredtokens.com/api/flags"),
     ]);
-    const list = sp.sponsors || [];
+    const list = sp.sponsors;
+    // Invariant 3: an unreadable pool is an error, never a measured zero.
+    // `sp.sponsors || []` would turn a renamed or wrapped key into an empty
+    // list and overwrite a stored dollar balance with 0 while status stays
+    // live, so the shape is validated before anything is totalled.
+    if (!Array.isArray(list)) {
+      throw new Error("sponsors payload malformed: sponsors is not an array");
+    }
     const cents = (k: "balanceCents" | "lifetimeCents" | "spentCents") =>
-      list.reduce((a, b) => a + (b[k] || 0), 0);
+      list.reduce((a, b) => {
+        const v = b[k];
+        if (typeof v !== "number" || !Number.isFinite(v)) {
+          throw new Error(`sponsors payload malformed: ${k} is not a number`);
+        }
+        return a + v;
+      }, 0);
     const balance = cents("balanceCents") / 100;
     const lifetime = cents("lifetimeCents") / 100;
     const spent = cents("spentCents") / 100;
