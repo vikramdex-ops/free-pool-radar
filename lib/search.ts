@@ -227,10 +227,12 @@ export function search(input: {
   };
 
   for (const o of input.offers) {
-    // With no free text, a term alone is enough. With free text, a recognised
-    // term must not also be required, or "claude keyless" would demand the
-    // model name contain the word "keyless" as well.
-    const ok = freeText === "" ? offerMatchesTerm(o) : offerPassesTerms(o);
+    // A recognised term is a filter, so an offer must satisfy all of them,
+    // with or without free text. Free text narrows further by substring.
+    // (APR-053: free text used to replace the term filter, so "alpha
+    // keyless" returned every alpha offer including non-keyless ones.)
+    const ok =
+      offerMatchesTerm(o) && (freeText === "" || offerPassesTerms(o));
     if (!ok) continue;
     hits.push({
       kind: "offer",
@@ -250,8 +252,6 @@ export function search(input: {
   // A provider is not filtered by offer terms: those describe offers, and a
   // provider page is the place to see every offer including the ones that fail
   // the filter. Matching it here would hide the thing the reader is looking for.
-  const providerPasses =
-    freeText === "" ? recognised.length === 0 : contains;
   for (const p of input.providers) {
     const hitText =
       freeText !== "" &&
@@ -286,13 +286,24 @@ export function search(input: {
 
   /* -- models ------------------------------------------------------- */
 
+  // Same gate as providers (:270): on a term-only query a model matches only
+  // when a recognised term label names it, never on an empty free text.
+  // (APR-053: `freeText === "" || ...` returned every model for "keyless".)
   for (const m of input.models) {
-    if (
-      freeText === "" ||
-      contains(m.display_name, freeText) ||
-      contains(m.model_id, freeText) ||
-      contains(m.family, freeText)
-    ) {
+    const hitText =
+      freeText !== "" &&
+      (contains(m.display_name, freeText) ||
+        contains(m.model_id, freeText) ||
+        contains(m.family, freeText));
+    const hitTerm = recognised.some((r) => {
+      const l = r.label.toLowerCase();
+      return (
+        contains(m.display_name, l) ||
+        contains(m.model_id, l) ||
+        contains(m.family, l)
+      );
+    });
+    if (freeText === "" ? hitTerm : hitText) {
       hits.push({
         kind: "model",
         id: `model-${m.id}`,
@@ -310,12 +321,18 @@ export function search(input: {
 
   /* -- events ------------------------------------------------------- */
 
+  // Same gate as providers: on a term-only query an event matches only when
+  // a recognised term label names it. (APR-053: every event returned for
+  // "keyless" before this.)
   for (const e of input.events) {
-    if (
-      freeText === "" ||
-      contains(e.name, freeText) ||
-      contains(e.slug, freeText)
-    ) {
+    const hitText =
+      freeText !== "" &&
+      (contains(e.name, freeText) || contains(e.slug, freeText));
+    const hitTerm = recognised.some((r) => {
+      const l = r.label.toLowerCase();
+      return contains(e.name, l) || contains(e.slug, l);
+    });
+    if (freeText === "" ? hitTerm : hitText) {
       hits.push({
         kind: "event",
         id: `event-${e.id}`,
