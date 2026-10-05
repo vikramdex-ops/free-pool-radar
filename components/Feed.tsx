@@ -82,6 +82,7 @@ export function ChangeFeed({
   kinds,
   emptyTitle,
   emptyBody,
+  limit,
 }: {
   changes: ChangeWithProvider[];
   now: number;
@@ -90,12 +91,24 @@ export function ChangeFeed({
   kinds?: string[];
   emptyTitle: string;
   emptyBody: string;
+  /**
+   * Caps how many provider groups this feed renders. The landing page caps
+   * it, because an uncapped feed is the same length as the change log and
+   * reproduces /timeline inside the home page (APR-055). The cap is a row
+   * count on groups, not on changes, so a reader sees whole subjects.
+   *
+   * Capping never removes access: the Full timeline link above is always
+   * rendered, whichever routes the landing page passes.
+   */
+  limit?: number;
 }) {
   const rows = kinds
     ? changes.filter((c) => kinds.includes(c.change_type))
     : changes;
 
-  const groups = groupChanges(rows);
+  const allGroups = groupChanges(rows);
+  const groups = limit ? allGroups.slice(0, limit) : allGroups;
+  const hidden = allGroups.length - groups.length;
 
   return (
     <section id={id} className="sect">
@@ -110,11 +123,20 @@ export function ChangeFeed({
       {groups.length === 0 ? (
         <EmptyState title={emptyTitle}>{emptyBody}</EmptyState>
       ) : (
-        <ol className="feed">
-          {groups.map((g) => (
-            <GroupRow key={g.key} group={g} now={now} />
-          ))}
-        </ol>
+        <>
+          <ol className="feed">
+            {groups.map((g) => (
+              <GroupRow key={g.key} group={g} now={now} />
+            ))}
+          </ol>
+          {hidden > 0 ? (
+            <p className="annot" style={{ marginTop: "0.75rem" }}>
+              Showing {groups.length} of {allGroups.length} subjects with
+              recorded changes in the last 6 hours. {hidden} more are on the
+              full timeline.
+            </p>
+          ) : null}
+        </>
       )}
     </section>
   );

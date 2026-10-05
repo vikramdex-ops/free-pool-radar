@@ -845,6 +845,12 @@ Visual character:
 * precise
 * futuristic without looking childish
 
+Density is not duplication. The homepage may preview a route it links to, and
+should cap that preview and state the cap, but it may not reproduce one: a
+route rendered inside another route is not information, it is the same
+information one click away, and it charges the reader the full height of that
+route before they reach anything that exists only on the page it is on.
+
 ---
 
 # 18. HERO SECTION
