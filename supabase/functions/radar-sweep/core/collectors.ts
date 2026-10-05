@@ -511,7 +511,8 @@ const apmix: Collector = {
     };
     const num = (k: string) => {
       const m = seg.match(new RegExp(`"${k}":(-?[\\d.]+)`));
-      return m ? Number(m[1]) : 0;
+      // Absent is null, never 0: an unread field must not read as exhausted.
+      return m ? Number(m[1]) : null;
     };
 
     const modelId = str("modelId");
