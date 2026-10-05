@@ -13,7 +13,7 @@ import { ChangeFeed, EndedArchive, SourceHealthPanel } from "@/components/Feed";
 import { Hero, Upcoming } from "@/components/Hero";
 import { REPO_URL } from "@/components/JsonLd";
 import { OfferLedger } from "@/components/Ledger";
-import { Registry } from "@/components/Registry";
+
 import { ReadError } from "@/components/ui";
 import { Methodology } from "@/components/Methodology";
 import {
@@ -97,6 +97,23 @@ export default async function Page() {
         )}
 
         <div className="wrap">
+          {/* APR-055: the home page is the only top-level route with no
+              page-head, so a reader arriving here and a reader arriving at
+              /live met two different page structures. The h1 stays in the
+              hero - PRODUCT.md:1606 blesses a distinct hero title and the
+              approval says keep h1.hero-title - so this block carries the
+              label and the lede and no heading of its own. */}
+          <header className="page-head">
+            <p className="label">Free Pool Radar</p>
+            <p className="page-lede">
+              Every free AI inference route we monitor, with the terms that
+              apply to it and the time we last confirmed it. This page is the
+              overview: it previews each section below and links to the route
+              that holds the complete set. Nothing here is scored, and no two
+              providers are ranked against each other.
+            </p>
+          </header>
+
           <div style={{ paddingTop: "2rem" }}>
             {statusError ? (
               <ReadError what="Source status" />
@@ -154,11 +171,14 @@ export default async function Page() {
               </div>
             </div>
             {/* Capped here so the landing page stays readable; /live holds the
-                complete set with filters. */}
+                complete set with filters. APR-055 lowered this from 40: a
+                preview of 40 rows is a copy of /live with a link at the top,
+                and the reader had to scroll 1,557px past it to reach anything
+                that exists only on this page. */}
             {offersError ? (
               <ReadError what="Live routes" />
             ) : (
-              <OfferLedger offers={offers} now={now} limit={40} />
+              <OfferLedger offers={offers} now={now} limit={12} />
             )}
           </section>
 
@@ -172,6 +192,7 @@ export default async function Page() {
                 changes={changes}
                 now={now}
                 kinds={["new"]}
+                limit={5}
                 emptyTitle="Nothing new this cycle"
                 emptyBody="The last sweep found no offers that were not already on record. New discoveries appear here the moment a monitored source publishes one."
               />
@@ -198,6 +219,7 @@ export default async function Page() {
                   "pool_extended",
                   "pool_cancelled",
                 ]}
+                limit={5}
                 emptyTitle="No tracked changes"
                 emptyBody="Nothing we track has changed since the last sweep. A quota move, a new card requirement or a rate-limit change appears here with both values."
               />
@@ -209,21 +231,6 @@ export default async function Page() {
           ) : (
             <EndedArchive offers={ended} now={now} />
           )}
-
-          <section id="registry" className="sect">
-            <div className="sect-head">
-              <h2 className="sect-title">Provider index</h2>
-              <Link href="/providers" className="link-ev">
-                All providers
-                <span aria-hidden="true"> →</span>
-              </Link>
-            </div>
-            {providersError ? (
-              <ReadError what="Provider index" />
-            ) : (
-              <Registry providers={providers} />
-            )}
-          </section>
 
           <Methodology />
         </div>
