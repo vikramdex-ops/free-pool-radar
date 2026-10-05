@@ -42,11 +42,19 @@ export function OfferLedger({
   now,
   showProvider = true,
   limit,
+  narrowCount = false,
 }: {
   offers: OfferWithProvider[];
   now: number;
   showProvider?: boolean;
   limit?: number;
+  /**
+   * VIS-061: print the count outside the table for viewports where the table
+   * hides. Pages whose count already survives below 900px (home's capped
+   * preview line, /live's filter count) leave this off so the count is never
+   * stated twice.
+   */
+  narrowCount?: boolean;
 }) {
   if (offers.length === 0) {
     return (
@@ -63,11 +71,22 @@ export function OfferLedger({
 
   return (
     <div className="ledger">
+      {/* VIS-061: the narrow form. Hidden at and above 900px, where the table
+          is the list — the two must never both render. */}
       <div className="ledger-cards">
         {shown.slice(0, 6).map((o) => (
           <OfferCard key={o.id} offer={o} now={now} />
         ))}
       </div>
+
+      {/* VIS-061: the count that survives with the table hidden. Outside
+          .ledger-table by construction, and CSS-visible only below 900px so
+          it never doubles the caption. */}
+      {narrowCount ? (
+        <p className="annot ledger-narrow-count">
+          {offers.length} currently usable free route{offers.length === 1 ? "" : "s"}
+        </p>
+      ) : null}
 
       <div className="tbl-wrap ledger-table">
         <table className="tbl tbl-live">

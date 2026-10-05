@@ -198,7 +198,7 @@ export default async function ProviderPage({
                   that apply to each.
                 </p>
               </div>
-              <OfferLedger offers={live} now={now} showProvider={false} />
+              <OfferLedger offers={live} now={now} showProvider={false} narrowCount />
             </section>
 
             {ended.length ? (

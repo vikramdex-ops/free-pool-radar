@@ -1030,8 +1030,12 @@ body {
    ledger
    ================================================================== */
 
-/* Cards are the primary form; the table appears only when there is room for
-   it. Showing both to a phone reader would mean the data twice. */
+/* VIS-061: the card grid and the table must never both render. Below 900px
+   the cards are the fallback and the table hides; at and above 900px the
+   table is the list and the cards hide. Showing both painted the same offers
+   twice under one caption. The narrow count line carries the caption's
+   number outside the table so it survives with the table hidden, and hides
+   where the caption itself is visible. */
 .ledger-cards {
   display: grid;
   gap: 1rem;
@@ -1040,8 +1044,15 @@ body {
 
 .ledger-table { margin-top: 1.5rem; }
 
+.ledger-narrow-count { margin-top: 1rem; }
+
 @media (max-width: 900px) {
   .ledger-table { display: none; }
+}
+
+@media (min-width: 901px) {
+  .ledger-cards { display: none; }
+  .ledger-narrow-count { display: none; }
 }
 
 .offer-card { padding: 1.125rem; }

@@ -94,6 +94,7 @@ jobs:
             test-canonical-dollars \
             test-free-models-listed \
             test-observation-source \
+            test-ledger-single-form \
             test-pool-adoption \
             test-stable-sorts \
             test-sweep-gate
