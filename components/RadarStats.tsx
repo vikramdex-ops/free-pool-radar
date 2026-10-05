@@ -22,6 +22,7 @@ import { num } from "@/lib/format";
 export function HeroStats({
   modelIds,
   modelRows,
+  totalLiveRows,
   cardlessProviders,
   liveProviders,
   liveOffers,
@@ -32,6 +33,8 @@ export function HeroStats({
   modelIds: number;
   /** Rows carrying a model id: the population the distinct-id figure is drawn from. */
   modelRows: number;
+  /** Every row in the live set: the context the counted population sits inside. */
+  totalLiveRows: number;
   cardlessProviders: number;
   liveProviders: number;
   liveOffers: number;
@@ -47,7 +50,7 @@ export function HeroStats({
     {
       v: num(modelIds),
       l: "Free model ids",
-      p: `distinct ids across ${num(modelRows)} rows carrying a model id on free routes`,
+      p: `distinct ids across ${num(modelRows)} live routes that carry one (${num(totalLiveRows)} live routes total)`,
     },
     {
       v: num(cardlessProviders),

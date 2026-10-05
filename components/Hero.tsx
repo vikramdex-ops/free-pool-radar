@@ -39,6 +39,8 @@ export function Hero({
     modelIds: number;
     /** Rows carrying a model id behind the distinct-id figure, so the population is stated (APR-059, CEO-R01). */
     modelRows: number;
+    /** Every row in the live set, so the label can name the total the population sits inside (CEO-R01). */
+    totalLiveRows: number;
     cardlessProviders: number;
     liveProviders: number;
     liveOffers: number;
