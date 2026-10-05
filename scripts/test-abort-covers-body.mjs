@@ -12,6 +12,10 @@
 // Run: node scripts/test-abort-covers-body.mjs (static; needs no server).
 import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
+// Imported (not only read) so a file that cannot even load fails this test:
+// a static-only assertion suite went green on an unparsable module before.
+import { COLLECTOR_BY_KEY } from "../supabase/functions/radar-sweep/core/collectors.ts";
+assert.ok(COLLECTOR_BY_KEY.has("apmix.event"), "apmix collector must be registered");
 
 const src = readFileSync(
   new URL("../supabase/functions/radar-sweep/core/collectors.ts", import.meta.url),
@@ -61,7 +65,7 @@ check(
 
 check(
   "apmix reads its body through text(), not a bare get()",
-  /const \{ status, body: html \} = await text\(url\)/.test(src),
+  /const \{ status: httpStatus, body: html \} = await text\(url\)/.test(src),
   "a direct get() caller would hold an unreleased timer path",
 );
 

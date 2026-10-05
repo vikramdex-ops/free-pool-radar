@@ -511,8 +511,8 @@ const apmix: Collector = {
   urls: [{ url: "https://apmix.ai/event", type: "rsc", priority: 1 }],
   collect: async () => {
     const url = "https://apmix.ai/event";
-    const { status, body: html } = await text(url);
-    if (status < 200 || status >= 300) throw new Error(`HTTP ${status}`);
+    const { status: httpStatus, body: html } = await text(url);
+    if (httpStatus < 200 || httpStatus >= 300) throw new Error(`HTTP ${httpStatus}`);
 
     // The event state is embedded in the Next.js RSC flight payload. Read the
     // fields directly rather than brace-matching a string full of escapes.
