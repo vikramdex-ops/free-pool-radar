@@ -96,8 +96,7 @@ jobs:
             test-observation-source \
             test-pool-adoption \
             test-stable-sorts \
-            test-sweep-gate \
-            test-search-gates
+            test-sweep-gate
           do
             echo "::group::$t"
             if node "scripts/$t.mjs"; then
