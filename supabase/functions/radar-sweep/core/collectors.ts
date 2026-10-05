@@ -499,6 +499,16 @@ const apmix: Collector = {
     const at = flat.indexOf('"initial":{');
     if (at === -1) throw new Error("event payload not found");
     const seg = flat.slice(at, at + 700);
+    // LED-050: a reorder pushing a field outside the window reads identically
+    // to an unpublished field. Tell them apart against a wider window: present
+    // wider but absent here means structural break (throw, like the missing
+    // marker); absent from both means unpublished (null, never 0).
+    const wide = flat.slice(at, at + 4000);
+    for (const k of ["pool", "remaining", "status"]) {
+      if (!seg.includes(`"${k}":`) && wide.includes(`"${k}":`)) {
+        throw new Error(`event field ${k} outside parse window`);
+      }
+    }
 
     const str = (k: string) => {
       const m = seg.match(new RegExp(`"${k}":(null|"(?:[^"\\\\]|\\\\.)*")`));
@@ -511,7 +521,9 @@ const apmix: Collector = {
     };
     const num = (k: string) => {
       const m = seg.match(new RegExp(`"${k}":(-?[\\d.]+)`));
-      return m ? Number(m[1]) : 0;
+      // Absent is null, never 0 (shared with LED-049): an unread field must
+      // not read as exhausted.
+      return m ? Number(m[1]) : null;
     };
 
     const modelId = str("modelId");
