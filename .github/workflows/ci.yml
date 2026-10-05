@@ -84,6 +84,7 @@ jobs:
             test-ink-surface-phase \
             test-csp-report-destination
             test-sponsors-pool-validation
+            test-abort-covers-body
           do
             echo "::group::$t"
             if node "scripts/$t.mjs"; then
