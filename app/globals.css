@@ -47,6 +47,15 @@
 :root {
   color-scheme: dark;
 
+  /* PRODUCT.md TRANSITION TO STATE (:1677-1679): a status, filter, theme or
+     disclosure changing is 0.15s to 0.18s, because at that duration the reader
+     registers a response rather than an event. One token, so a theme duration
+     cannot drift between the rules that declare it (Prism, cycle
+     2026-10-05T04). Never bundle this with reduced-motion: globals.css:128
+     neutralises every transition for readers who asked for that, and that
+     guard is unchanged and correct. */
+  --t-dur: 0.15s;
+
   --t-sheet: #06080c;
   --t-panel: #0c1017;
   --t-raise: #121822;
@@ -111,7 +120,13 @@ body {
   background-color: var(--t-sheet);
   color: var(--t-ink);
   font-family: var(--f-body);
-  transition: background-color 0.35s ease, color 0.35s ease;
+  /* 0.35s to 0.15s for spec compliance against PRODUCT.md:1677-1679. This is
+     NOT the fix for the theme-fade contrast failure and must never be
+     presented as one: color is inherited and background-color is not, so
+     shortening this only narrows the window in which descendants carry new
+     ink on an old background. The fix is the per-rule background-color below
+     (VIS-047). */
+  transition: background-color var(--t-dur) ease, color var(--t-dur) ease;
 }
 
 ::selection {
@@ -372,7 +387,10 @@ body {
   color: var(--t-ink);
   text-decoration: none;
   border-bottom: 1px solid var(--t-rule);
-  transition: border-color 0.15s ease, color 0.15s ease;
+  /* background-color travels with the ink (VIS-047): a theme flip must never
+     put new ink on an old surface. */
+  transition: border-color var(--t-dur) ease, color var(--t-dur) ease,
+    background-color var(--t-dur) ease;
 }
 .link:hover { border-bottom-color: var(--t-info); color: var(--t-info); }
 
@@ -406,7 +424,9 @@ body {
   background: var(--t-raise);
   color: var(--t-ink-2);
   cursor: pointer;
-  transition: color 0.15s ease, border-color 0.15s ease;
+  /* background-color with the ink (VIS-047). */
+  transition: color var(--t-dur) ease, border-color var(--t-dur) ease,
+    background-color var(--t-dur) ease;
 }
 .btn:hover { color: var(--t-ink); border-color: var(--t-info); }
 
@@ -444,7 +464,11 @@ body {
   background: transparent;
   color: var(--t-ink-3);
   cursor: pointer;
-  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+  /* Narrowed from the `background` shorthand to `background-color`: this
+     element's background is a flat colour and never an image, so the
+     shorthand was animating a property it never changed (VIS-047). */
+  transition: color var(--t-dur) ease, border-color var(--t-dur) ease,
+    background-color var(--t-dur) ease;
 }
 .filter:hover { color: var(--t-ink); border-color: var(--t-ink-3); }
 .filter[aria-pressed="true"] {
@@ -605,7 +629,9 @@ body {
   white-space: nowrap;
   padding-block: 0.5rem;
   border-bottom: 1px solid transparent;
-  transition: color 0.15s ease, border-color 0.15s ease;
+  /* background-color with the ink (VIS-047). */
+  transition: color var(--t-dur) ease, border-color var(--t-dur) ease,
+    background-color var(--t-dur) ease;
 }
 .nav-link:hover { color: var(--t-ink); border-bottom-color: var(--t-info); }
 
@@ -631,7 +657,15 @@ body {
   font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.14em;
-  transition: color 0.15s ease, border-color 0.15s ease;
+  /* background-color with the ink (VIS-047).
+     min-width holds the control's box while the label swaps between DARK
+     (4 chars) and LIGHT (5 chars) at 0.14em letter-spacing: the right edge is
+     pinned by position:fixed, so without a floor the LEFT edge moves 2.547px
+     on every flip. */
+  min-width: 7.25rem;
+  justify-content: flex-end;
+  transition: color var(--t-dur) ease, border-color var(--t-dur) ease,
+    background-color var(--t-dur) ease;
 }
 .theme-toggle:hover { color: var(--t-ink); border-color: var(--t-ink-3); }
 
@@ -641,7 +675,10 @@ body {
   inset: 0;
   width: 100%;
   height: 100%;
-  transition: opacity 0.25s ease;
+  /* 0.25s to 0.15s: the only other violator of the 0.15-0.18s theme
+     vocabulary (PRODUCT.md:1677-1679). Reached independently by three members
+     in cycle 2026-10-05T04. */
+  transition: opacity var(--t-dur) ease;
 }
 .theme-sun.on, .theme-moon.on { opacity: 1; }
 .theme-sun.off, .theme-moon.off { opacity: 0; }
