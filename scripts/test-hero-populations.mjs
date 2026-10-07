@@ -1,4 +1,7 @@
 ﻿// APR-059: every hero figure states its population and an as-of date.
+// Slice 1 extends it: VIS-066 (tile 1), CEO-R31 (tile 2), SAFE sweep period,
+// APR-031 ring deletion — one acceptance test for the hero's truthfulness,
+// extended rather than paralleled.
 //
 // A count without the set it was drawn from cannot be checked and goes stale
 // silently. Measured before this change: the hero printed a distinct model-id
@@ -26,6 +29,16 @@ const statsRaw = readFileSync(
 const page = readFileSync(new URL("../app/page.tsx", import.meta.url), "utf8").replace(
   /\r\n/g,
   "\n",
+);
+const css = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8").replace(
+  /\r\n/g,
+  "\n",
+);
+const hero = stripComments(
+  readFileSync(new URL("../components/Hero.tsx", import.meta.url), "utf8").replace(/\r\n/g, "\n"),
+);
+const dial = stripComments(
+  readFileSync(new URL("../components/RadarDial.tsx", import.meta.url), "utf8").replace(/\r\n/g, "\n"),
 );
 // Comments are stripped before asserting on literals: a date inside a comment
 // explaining why a date is required is not a hard-coded date.
@@ -199,13 +212,78 @@ check(
   },
 );
 
-// 6. The distinct-id count and the row count must come from the same offers
-//    array, or "distinct ids across N rows" could describe two different sets.
+// 6. CEO-R01: the distinct-id count and the row count must share one
+//    population — the rows carrying a model id. Pairing the distinct ids with
+//    offers.length compared two different populations (rows with and without a
+//    model id), so the page must derive both from model_id_text and pass the
+//    filtered count, never offers.length.
 check(
   "distinct ids and row count share one population",
   () => {
-    assert.match(page, /const modelIds = new Set\(\s*\n?\s*offers\.map/);
-    assert.match(page, /modelRows:\s*offers\.length/);
+    assert.match(page, /const modelIds = new Set\(\s*\n?\s*modelRowsWithId\.map/);
+    assert.match(page, /modelRows:\s*modelRowsWithId/);
+    assert.match(
+      page,
+      /modelRowsWithId = offers\.filter\(\(o\) => Boolean\(o\.model_id_text\)\)/,
+    );
+    assert.equal(
+      /modelRows:\s*offers\.length/.test(page),
+      false,
+      "modelRows still uses the whole-row denominator",
+    );
+  },
+);
+
+// 8. VIS-066: a correct number with a label that does not name its
+//    population is still a violation. The distinct-id figure's population
+//    sentence must pair the numerator with its own denominator AND the total
+//    it sits inside, both computed from the data — never one bare count, and
+//    never words-free figures a reader cannot check.
+check(
+  "the distinct-id figure names its population and its total",
+  () => {
+    const first = figures.find((chunk) => /\bl:\s*"Free model ids"/.test(chunk));
+    assert.ok(first, "no Free model ids figure found");
+    assert.match(
+      first,
+      /\$\{num\(modelRows\)\}/,
+      "the sentence does not read its denominator off modelRows",
+    );
+    assert.match(
+      first,
+      /\$\{num\(totalLiveRows\)\}/,
+      "the sentence does not read its total off totalLiveRows",
+    );
+    assert.match(
+      first,
+      /live routes that carry one/,
+      "the sentence does not name the counted population",
+    );
+    assert.match(
+      first,
+      /live routes total/,
+      "the sentence does not name the total the population sits inside",
+    );
+  },
+);
+
+// 9. CEO-R31: tile 2 states a cardless count under a total-provider count.
+//    "Cardless" and "with a live route" are not the same population. The
+//    denominator must be the providers with a live route drawn off the same
+//    array as the numerator — never the whole provider registry.
+check(
+  "cardless denominator is providers with a live route, not the registry",
+  () => {
+    assert.equal(
+      /liveProviders:\s*providers\.length/.test(page),
+      false,
+      "liveProviders still counts the whole registry",
+    );
+    assert.match(
+      page,
+      /liveProviders:\s*liveProviders/,
+      "the live-route provider count is not passed through",
+    );
   },
 );
 
@@ -216,6 +294,45 @@ check(
   "the withdrawn figure states its denominator",
   () => assert.match(stats, /kept on the record of/),
 );
+
+// 10. SAFE: no constant sweep period. A 7s sweep overstated collection
+//    cadence ~988x; the period threads from the measured interval instead.
+check("the sweep period is not a constant", () => {
+  assert.equal(
+    /animation:\s*radar-sweep\s+7s/.test(css),
+    false,
+    "the 7s constant still drives the sweep",
+  );
+  assert.match(css, /var\(--sweep-period/, "no CSS variable carries the period");
+});
+
+// 11. SAFE: the period derives from last/next sweep on the page — already
+//    fetched, no new query — and Hero sets the variable on the dial.
+check("the period derives from last/next sweep on the page", () => {
+  assert.match(page, /last_sweep_at/, "page does not read the last sweep");
+  assert.match(page, /next_sweep_at/, "page does not read the next sweep");
+  assert.match(hero, /--sweep-period/, "Hero does not set the sweep variable");
+});
+
+// 12. APR-031: the range rings are gone, not restyled. Binding pool scale
+//    to ring radius was a radius rank.
+check("no range rings encode pool scale", () => {
+  assert.equal(
+    /\[0\.34,\s*0\.56,\s*0\.78,\s*1\]/.test(dial),
+    false,
+    "the four ring fractions still render",
+  );
+  assert.equal(/Range rings/.test(dial), false, "a range-ring comment survives its deletion");
+});
+
+// Guards: what Slice 1 must not move.
+check("the LIVE dot keeps its pulse", () => {
+  assert.match(hero, /dot-live tick/, "the hero eyebrow lost the live dot");
+});
+
+check("reduced motion still collapses every animation", () => {
+  assert.match(css, /prefers-reduced-motion/, "no reduced-motion blanket covers the hero");
+});
 
 if (failures > 0) {
   console.error(`\n${failures} check(s) failed`);

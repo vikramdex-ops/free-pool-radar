@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import type {
   ChangeWithProvider,
@@ -29,16 +30,21 @@ export function Hero({
   events,
   changes,
   now,
+  sweepPeriodSec,
   stats,
 }: {
   offers: OfferWithProvider[];
   events: RadarEvent[];
   changes: ChangeWithProvider[];
   now: number;
+  /** Measured sweep interval in seconds, threaded to the dial as --sweep-period (SAFE). */
+  sweepPeriodSec: number;
   stats: {
     modelIds: number;
-    /** Rows behind the distinct-id figure, so the population is stated (APR-059). */
+    /** Rows carrying a model id: the population the distinct-id figure counts (VIS-066). */
     modelRows: number;
+    /** Every row in the live set: the context figure the counted population sits inside. */
+    totalLiveRows: number;
     cardlessProviders: number;
     liveProviders: number;
     liveOffers: number;
@@ -87,7 +93,10 @@ export function Hero({
             </div>
           </div>
 
-          <div className="hero-dial">
+          <div
+            className="hero-dial"
+            style={{ "--sweep-period": `${sweepPeriodSec}s` } as CSSProperties}
+          >
             <RadarFromData
               offers={offers}
               events={events}
