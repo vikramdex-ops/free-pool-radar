@@ -208,4 +208,6 @@ Repository description: *A live radar of genuinely free AI inference — unranke
 
 GitHub topics you may add: `free-ai`, `api-tracker`, `open-data`, `postgres`, `vercel`. Do not add `best`, `top`, or `ranking`.
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the fuller version of the above, plus structured [issue templates](.github/ISSUE_TEMPLATE) for a provider correction vs. a bug.
+
 A change is not done until it is merged and verified against the deployed site.

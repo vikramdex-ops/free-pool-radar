@@ -1,0 +1,38 @@
+name: 📡 Provider / data correction
+description: A provider's listed free tier is wrong, stale, missing, or newly announced
+labels: ["data"]
+body:
+  - type: input
+    id: provider
+    attributes:
+      label: Provider
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Official source URL
+      description: Docs page, pricing page, or announcement this is based on.
+    validations:
+      required: true
+  - type: dropdown
+    id: verification
+    attributes:
+      label: Verification level
+      options:
+        - live_api
+        - official_docs
+        - official_event_page
+        - official_announcement
+        - official_social
+        - secondary
+        - community
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What's wrong, missing, or new
+      description: What the site currently shows (if anything) vs. what the source says. Date the figure (e.g. "as observed 2026-09-30").
+    validations:
+      required: true
