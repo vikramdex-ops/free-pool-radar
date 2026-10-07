@@ -54,9 +54,12 @@ export default async function Page() {
     getProviders(),
   ]);
 
-  // The hero's four figures are counted, not declared.
+  // The hero's figures are counted, not declared. VIS-066: the distinct-id
+  // numerator and its denominator come off one array — the rows carrying a
+  // model id — never the whole row count, and the label names both.
+  const withModel = offers.filter((o) => Boolean(o.model_id_text));
   const modelIds = new Set(
-    offers.map((o) => o.model_id_text).filter((m): m is string => Boolean(m)),
+    withModel.map((o) => o.model_id_text).filter((m): m is string => Boolean(m)),
   ).size;
   const cardlessProviders = new Set(
     offers
@@ -67,6 +70,19 @@ export default async function Page() {
 
   const sourcesOk = status?.sources_ok ?? 0;
   const sourcesTotal = status?.sources_total ?? 0;
+
+  // SAFE: the radar-sweep period derives from the measured sweep interval —
+  // next minus last, both already on the page via getStatus, no new query.
+  // A constant here overstated collection cadence ~988x. The designed 5h
+  // schedule applies only before anything has been measured.
+  const sweepPeriodSec = (() => {
+    const last = status?.last_sweep_at ? Date.parse(status.last_sweep_at) : NaN;
+    const next = status?.next_sweep_at ? Date.parse(status.next_sweep_at) : NaN;
+    if (Number.isFinite(last) && Number.isFinite(next) && next > last) {
+      return Math.round((next - last) / 1000);
+    }
+    return 5 * 3600;
+  })();
 
   return (
     <>
@@ -83,9 +99,11 @@ export default async function Page() {
           events={events}
           changes={changes}
           now={now}
+          sweepPeriodSec={sweepPeriodSec}
           stats={{
             modelIds,
-            modelRows: offers.length,
+            modelRows: withModel.length,
+            liveRoutes: offers.length,
             cardlessProviders,
             liveProviders: providers.length,
             liveOffers: offers.filter((o) => o.status === "live").length,

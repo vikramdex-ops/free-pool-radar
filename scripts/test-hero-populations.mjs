@@ -199,13 +199,19 @@ check(
   },
 );
 
-// 6. The distinct-id count and the row count must come from the same offers
-//    array, or "distinct ids across N rows" could describe two different sets.
+// 6. VIS-066: the distinct-id count and the row count must share one
+//    population — the rows carrying a model id. The page derives both from
+//    one filtered array and never passes offers.length as the denominator.
 check(
   "distinct ids and row count share one population",
   () => {
-    assert.match(page, /const modelIds = new Set\(\s*\n?\s*offers\.map/);
-    assert.match(page, /modelRows:\s*offers\.length/);
+    assert.match(page, /offers\.filter\(\(o\) => Boolean\(o\.model_id_text\)\)/);
+    assert.match(page, /modelRows:\s*withModel\.length/);
+    assert.equal(
+      /modelRows:\s*offers\.length/.test(page),
+      false,
+      "modelRows still uses the whole-row denominator",
+    );
   },
 );
 

@@ -710,6 +710,25 @@ body {
   overflow: hidden;
 }
 
+/* SAFE atmosphere: carries no data. A slow luminance drift on a decorative
+   backdrop layer — it binds no stored value, so a frozen frame asserts
+   nothing the static page does not. Collapses under prefers-reduced-motion
+   with every other animation via the blanket rule. */
+@keyframes hero-drift {
+  from { opacity: 0.45; }
+  to { opacity: 0.9; }
+}
+.hero-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(60% 90% at 78% 30%, var(--t-ink-3) 0%, transparent 62%),
+    radial-gradient(45% 70% at 12% 85%, var(--t-rule) 0%, transparent 60%);
+  opacity: 0.06;
+  animation: hero-drift 120s ease-in-out infinite alternate;
+}
+
 .hero-grid {
   display: grid;
   gap: 2.5rem;
@@ -842,7 +861,11 @@ body {
 
 .radar-sweep {
   transform-origin: 50% 50%;
-  animation: radar-sweep 7s linear infinite;
+  /* SAFE: the period is the measured sweep interval threaded from the page
+     (--sweep-period), not a constant. A 7s sweep overstated collection
+     cadence ~988x against 4.8 measured sweeps/day. The 18000s fallback is
+     the designed 5h schedule and applies only before anything is measured. */
+  animation: radar-sweep var(--sweep-period, 18000s) linear infinite;
 }
 
 /* Only the hit areas take the pointer.
