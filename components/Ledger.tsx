@@ -61,12 +61,21 @@ export function OfferLedger({
   const shown = limit ? offers.slice(0, limit) : offers;
   const hidden = offers.length - shown.length;
 
+  // APR-005: the cards are the narrow form of this ledger (the table hides
+  // below 900px), so they render the full shown set with no separate cap. A
+  // hard 6 here once meant a narrow reader saw 6 cards under counts claiming
+  // every route. Rendered and counted are the same array, so they cannot
+  // disagree.
+  const cards = shown.map((o) => <OfferCard key={o.id} offer={o} now={now} />);
+
   return (
     <div className="ledger">
+      {/* APR-005: cards render the full shown set, with no separate cap.
+          Rendered and counted are the same array now, so they cannot
+          disagree: /live's filter count and the table caption both describe
+          exactly these cards. */}
       <div className="ledger-cards">
-        {shown.slice(0, 6).map((o) => (
-          <OfferCard key={o.id} offer={o} now={now} />
-        ))}
+        {cards}
       </div>
 
       <div className="tbl-wrap ledger-table">
@@ -164,6 +173,9 @@ export function OfferLedger({
       </div>
 
       {hidden > 0 ? (
+        // Capped preview (the home page). This line sits outside the table,
+        // so it survives below 900px where the caption hides: the narrow
+        // reader keeps the count and the control that reaches the rest.
         <p className="annot" style={{ marginTop: "1rem" }}>
           {num(hidden)} further free route{hidden === 1 ? "" : "s"} not shown
           here.{" "}
