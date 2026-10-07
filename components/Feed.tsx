@@ -40,7 +40,7 @@ interface Group {
  * provider that changes something today and again next week still shows as two
  * separate events. Merging across time would quietly rewrite history.
  */
-function groupChanges(
+export function groupChanges(
   changes: ChangeWithProvider[],
   windowMs = 6 * 3600_000,
 ): Group[] {
@@ -142,7 +142,7 @@ export function ChangeFeed({
   );
 }
 
-function GroupRow({ group, now }: { group: Group; now: number }) {
+export function GroupRow({ group, now }: { group: Group; now: number }) {
   const { provider, rows, first } = group;
   const count = rows.length;
   const named = rows.slice(0, NAME_LIMIT);

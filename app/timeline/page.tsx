@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { EmptyState, EvidenceLink, ReadError } from "@/components/ui";
+import { groupChanges, GroupRow } from "@/components/Feed";
+import { EmptyState, ReadError } from "@/components/ui";
 import { getTimeline } from "@/lib/db";
-import { CHANGE_LABEL, FIELD_LABEL, ago, stampUTC } from "@/lib/format";
+import { stampUTC } from "@/lib/format";
 
 export const revalidate = 300;
 
@@ -50,73 +50,23 @@ export default async function TimelinePage() {
           </EmptyState>
         ) : (
           <div className="timeline">
-            {[...byDay.entries()].map(([day, rows]) => (
-              <section key={day} className="timeline-day">
-                <h2 className="timeline-date mono">{day}</h2>
-                <ol className="feed">
-                  {rows.map((c) => (
-                    <li key={c.id} className="panel feed-row">
-                      <div className="feed-when">
-                        <p className="mono feed-stamp">
-                          {(stampUTC(c.detected_at) ?? "").split(" · ")[1] ?? ""}
-                        </p>
-                        <p className="annot mono">{ago(c.detected_at, now)}</p>
-                      </div>
-                      <div className="feed-what">
-                        <p className="label" style={{ color: "var(--t-upcoming)" }}>
-                          {CHANGE_LABEL[c.change_type] ?? c.change_type}
-                        </p>
-                        <p className="strong">
-                          {c.provider ? (
-                            <Link href={`/providers/${c.provider.slug}`} className="link">
-                              {c.provider.name}
-                            </Link>
-                          ) : (
-                            "Unattributed"
-                          )}
-                        </p>
-                        {/* Name the subject, or several different events read as
-                            the same line. */}
-                        {c.offer ? (
-                          <p className="annot mono">{c.offer.model_label}</p>
-                        ) : null}
-                        {c.field && c.change_type !== "new" ? (
-                          <p className="annot">
-                            {FIELD_LABEL[c.field] ?? c.field}:{" "}
-                            <span className="mono">
-                              {c.old_value ?? "not stated"}
-                            </span>{" "}
-                            →{" "}
-                            <span className="mono strong">
-                              {c.new_value ?? "not stated"}
-                            </span>
-                          </p>
-                        ) : c.change_type === "new" ? (
-                          <p className="annot">
-                            added as {c.new_value?.replace(/_/g, " ")}
-                          </p>
-                        ) : null}
-                        {c.evidence ? <p className="annot">{c.evidence}</p> : null}
-                      </div>
-                      <div className="feed-source">
-                        {c.offer_id ? (
-                          <EvidenceLink offerId={c.offer_id} />
-                        ) : c.source_url ? (
-                          <a
-                            href={c.source_url}
-                            className="link-ev"
-                            target="_blank"
-                            rel="noopener noreferrer nofollow"
-                          >
-                            Source <span aria-hidden="true">→</span>
-                          </a>
-                        ) : null}
-                      </div>
-                    </li>
-                  ))}
-                </ol>
-              </section>
-            ))}
+            {/* DEC-T23-GROUPCOLLAPSE: duplicate-collapsing inside each day.
+                Rows sharing a provider, a change type and a moment render as
+                one entry with the routes beneath it, via the same GroupRow
+                the feeds use — one rendering path, not two. */}
+            {[...byDay.entries()].map(([day, rows]) => {
+              const groups = groupChanges(rows);
+              return (
+                <section key={day} className="timeline-day">
+                  <h2 className="timeline-date mono">{day}</h2>
+                  <ol className="feed">
+                    {groups.map((g) => (
+                      <GroupRow key={g.key} group={g} now={now} />
+                    ))}
+                  </ol>
+                </section>
+              );
+            })}
           </div>
         )}
       </main>
