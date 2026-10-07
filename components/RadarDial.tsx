@@ -8,15 +8,14 @@ import Link from "next/link";
  *
  * Every mark on this dial is a row in the database. The mapping is fixed:
  *
- *   ring      token pool scale, outermost for the largest pool
  *   point     one provider, placed by a golden-angle spiral
  *   brightness how recently it was verified
  *   arc       an upcoming event, sitting on the rim
  *   pulse     a provider that changed on the most recent sweep
  *
- * Because the mapping is derived from the data, the visualisation cannot drift
- * from it: if the database says there are no pooled offers, the outer rings
- * empty out.
+ * APR-031 deleted the range rings: binding pool scale to ring radius was a
+ * radius rank, so the rings are gone rather than restyled. Dot distance from
+ * the centre now carries no meaning.
  *
  * Interaction is deliberately restrained. A radar is an instrument, so the
  * pointer moves the sweep, a hovered contact brightens and names itself, and a
@@ -111,21 +110,8 @@ export function Radar({
 
           <rect width="400" height="400" fill="url(#radar-glow)" />
 
-          {/* Range rings: the pool scale. */}
-          {[0.34, 0.56, 0.78, 1].map((f) => (
-            <circle
-              key={f}
-              cx={CX}
-              cy={CY}
-              r={R_MAX * f}
-              fill="none"
-              stroke="var(--t-rule)"
-              strokeWidth="1"
-              strokeDasharray={f === 1 ? undefined : "2 6"}
-            />
-          ))}
-
-          {/* Bearing spokes. */}
+          {/* Bearing spokes. APR-031 deleted the range rings that used to sit
+              here: binding pool scale to ring radius was a radius rank. */}
           {Array.from({ length: 12 }, (_, i) => {
             const a = (i / 12) * Math.PI * 2;
             return (

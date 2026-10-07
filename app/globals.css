@@ -842,7 +842,11 @@ body {
 
 .radar-sweep {
   transform-origin: 50% 50%;
-  animation: radar-sweep 7s linear infinite;
+  /* SAFE: the period is the measured sweep interval threaded from the page
+     (--sweep-period), not a constant. A 7s sweep overstated collection
+     cadence ~988x against 4.8 measured sweeps/day. The 18000s fallback is
+     the designed 5h schedule and applies only before anything is measured. */
+  animation: radar-sweep var(--sweep-period, 18000s) linear infinite;
 }
 
 /* Only the hit areas take the pointer.
