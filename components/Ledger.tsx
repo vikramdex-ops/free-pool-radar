@@ -277,7 +277,7 @@ function OfferCard({ offer, now }: { offer: OfferWithProvider; now: number }) {
       </dl>
 
       <div className="offer-card-foot">
-        <EvidenceLink href={offer.official_evidence_url} />
+        <EvidenceLink offerId={offer.id} />
       </div>
     </article>
   );

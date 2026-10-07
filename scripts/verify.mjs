@@ -198,6 +198,45 @@ for (const vp of VIEWPORTS) {
         }
       }
 
+      // APR-006: anchors present are not anchors reachable. /live hides
+      // its table (and all 148 internal /evidence/[id] anchors) below
+      // 900px, so the check counts anchors that are actually painted at
+      // the current viewport -- and at mobile widths it requires the
+      // replacement card form to carry internal citation links too.
+      if (p.name === "live") {
+        const evidence = await page.evaluate(() => {
+          const visible = (el) => {
+            const r = el.getBoundingClientRect();
+            if (r.width === 0 || r.height === 0) return false;
+            let n = el;
+            while (n && n !== document.body) {
+              const cs = getComputedStyle(n);
+              if (cs.display === "none" || cs.visibility === "hidden") {
+                return false;
+              }
+              n = n.parentElement;
+            }
+            return true;
+          };
+          const anchors = [...document.querySelectorAll("a.link-ev")].filter(
+            visible,
+          );
+          const internal = anchors.filter((a) =>
+            (a.getAttribute("href") || "").startsWith("/evidence/"),
+          );
+          return { anchors: anchors.length, internal: internal.length };
+        });
+        if (evidence.anchors === 0) {
+          problems.push(
+            `${vp.name}/${theme} ${p.path} shows no evidence links at all`,
+          );
+        } else if (evidence.internal === 0) {
+          problems.push(
+            `${vp.name}/${theme} ${p.path} shows ${evidence.anchors} evidence links but none reach the internal citation record`,
+          );
+        }
+      }
+
       if (p.name === "home" || vp.name === "desktop") {
         await page.screenshot({
           path: `${OUT}/${p.name}-${vp.name}-${theme}.png`,
