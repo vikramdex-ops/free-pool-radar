@@ -221,7 +221,40 @@ check(
   },
 );
 
-// 7. The withdrawn figure must be a subset statement, not a bare count: "ended
+// 8. VIS-066: a correct number with a label that does not name its
+//    population is still a violation. The distinct-id figure's population
+//    sentence must pair the numerator with its own denominator AND the total
+//    it sits inside, both computed from the data — never one bare count, and
+//    never words-free figures a reader cannot check.
+check(
+  "the distinct-id figure names its population and its total",
+  () => {
+    const first = figures.find((chunk) => /\bl:\s*"Free model ids"/.test(chunk));
+    assert.ok(first, "no Free model ids figure found");
+    assert.match(
+      first,
+      /\$\{num\(modelRows\)\}/,
+      "the sentence does not read its denominator off modelRows",
+    );
+    assert.match(
+      first,
+      /\$\{num\(totalLiveRows\)\}/,
+      "the sentence does not read its total off totalLiveRows",
+    );
+    assert.match(
+      first,
+      /live routes that carry one/,
+      "the sentence does not name the counted population",
+    );
+    assert.match(
+      first,
+      /live routes total/,
+      "the sentence does not name the total the population sits inside",
+    );
+  },
+);
+
+// 9. The withdrawn figure must be a subset statement, not a bare count: "ended
 //    routes, kept on the record of N live" is honest about what the denominator
 //    is.
 check(
