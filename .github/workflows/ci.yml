@@ -102,6 +102,8 @@ jobs:
             test-compare-row-identity \
             test-hero-deescalation \
             test-home-no-replica \
+            test-search-gates \
+            test-site-origin \
             test-ci-loop-complete
           do
             echo "::group::$t"
