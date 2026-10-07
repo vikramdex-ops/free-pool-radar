@@ -63,6 +63,23 @@ check("the tile names the population it counts and the total", () => {
   assert.match(stats, /of \$\{num\(liveRoutes\)\} live routes/, "the total is unnamed");
 });
 
+// 2b. CEO-R31: tile 2 states a cardless count under a total-provider count.
+//    "Cardless" and "with a live route" are not the same population. The
+//    denominator must be the providers with a live route drawn off the same
+//    array as the numerator — never the whole provider registry.
+check("cardless denominator is providers with a live route, not the registry", () => {
+  assert.equal(
+    /liveProviders:\s*providers\.length/.test(page),
+    false,
+    "liveProviders still counts the whole registry",
+  );
+  assert.match(
+    page,
+    /liveProviders/,
+    "no live-route provider denominator is passed at all",
+  );
+});
+
 // 3. SAFE: no constant sweep period.
 check("the sweep period is not a constant", () => {
   assert.equal(

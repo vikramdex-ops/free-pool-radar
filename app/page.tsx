@@ -61,12 +61,16 @@ export default async function Page() {
   const modelIds = new Set(
     withModel.map((o) => o.model_id_text).filter((m): m is string => Boolean(m)),
   ).size;
-  const cardlessProviders = new Set(
-    offers
-      .filter((o) => !o.card_required && o.status === "live")
+  // CEO-R31: the cardless numerator and its denominator come off one array —
+  // the live routes — never the whole provider registry. "Cardless" and
+  // "with a live route" must be the same population under one figure.
+  const live = offers.filter((o) => o.status === "live");
+  const liveSlugs = (rows: typeof live) =>
+    rows
       .map((o) => o.provider?.slug)
-      .filter((s): s is string => Boolean(s)),
-  ).size;
+      .filter((s): s is string => Boolean(s));
+  const liveProviders = new Set(liveSlugs(live)).size;
+  const cardlessProviders = new Set(liveSlugs(live.filter((o) => !o.card_required))).size;
 
   const sourcesOk = status?.sources_ok ?? 0;
   const sourcesTotal = status?.sources_total ?? 0;
@@ -105,7 +109,7 @@ export default async function Page() {
             modelRows: withModel.length,
             liveRoutes: offers.length,
             cardlessProviders,
-            liveProviders: providers.length,
+            liveProviders: liveProviders,
             liveOffers: offers.filter((o) => o.status === "live").length,
             sourcesLive: sourcesOk,
             sourcesTotal,
