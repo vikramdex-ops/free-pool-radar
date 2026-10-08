@@ -40,6 +40,7 @@ const STATIC_ROUTES = [
   "/compare",
   "/timeline",
   "/methodology",
+  "/ecosystem",
 ];
 
 function toDate(v: string | null | undefined): Date | undefined {

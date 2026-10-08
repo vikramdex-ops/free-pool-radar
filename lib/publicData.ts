@@ -3,10 +3,15 @@ import {
   getEndedOffers,
   getEvents,
   getLiveOffers,
+  getModels,
+  getProviders,
   getStatus,
   getUpcomingOffers,
   isConfigured,
+  type Model,
   type OfferWithProvider,
+  type Provider,
+  type RadarEvent,
 } from "@/lib/db";
 import { iso, stampUTC } from "@/lib/format";
 
@@ -92,20 +97,87 @@ export function serialiseOffer(o: OfferWithProvider) {
   };
 }
 
+/** The provider registry wire shape. One definition, so the registry route and
+ *  the dataset export can never drift. */
+export function serialiseProvider(p: Provider) {
+  return {
+    id: p.id,
+    name: p.name,
+    slug: p.slug,
+    officialUrl: p.official_url,
+    description: p.description,
+    type: p.provider_type,
+    country: p.country,
+    status: p.status,
+    freeModelCount: p.free_model_count,
+    liveOfferCount: p.live_offer_count,
+    lastVerifiedAt: iso(p.last_verified_at),
+    lastVerifiedDisplay: stampUTC(p.last_verified_at),
+  };
+}
+
+/** The model wire shape. */
+export function serialiseModel(m: Model) {
+  return {
+    id: m.id,
+    slug: m.slug,
+    modelId: m.model_id,
+    displayName: m.display_name,
+    family: m.family,
+    parameterCount: m.parameter_count,
+    contextWindow: m.context_window,
+    capabilities: m.capabilities,
+    officialModelUrl: m.official_model_url,
+    firstSeenAt: iso(m.first_seen_at),
+  };
+}
+
+/** The event wire shape. */
+export function serialiseEvent(e: RadarEvent) {
+  return {
+    id: e.id,
+    slug: e.slug,
+    name: e.name,
+    description: e.description,
+    provider: e.provider?.name ?? null,
+    providerSlug: e.provider?.slug ?? null,
+    status: e.status,
+    startAt: iso(e.start_at),
+    endAt: iso(e.end_at),
+    poolSize: e.pool_size,
+    poolRemaining: e.pool_remaining,
+    unit: e.unit,
+    models: e.models,
+    eligibility: e.eligibility,
+    requirements: e.requirements,
+    exhaustionCondition: e.exhaustion_condition,
+    officialUrl: e.official_url,
+    announcedAt: iso(e.announced_at),
+    lastVerifiedAt: iso(e.last_verified_at),
+    lastVerifiedDisplay: stampUTC(e.last_verified_at),
+  };
+}
+
+/** The explicit "no database configured" reply. Shared so JSON, CSV and XML
+ *  responses all say the same thing instead of one of them looking empty. */
+export function notConfiguredResponse(): NextResponse {
+  return NextResponse.json(
+    {
+      error: "not_configured",
+      message:
+        "The database is not configured on this deployment. See .env.example.",
+    },
+    { status: 503 },
+  );
+}
+
 /** Standard envelope: the data, plus when it was produced and from where. */
 export function envelope(
   data: unknown,
   extra: Record<string, unknown> = {},
 ): NextResponse {
   if (!isConfigured()) {
-    return NextResponse.json(
-      {
-        error: "not_configured",
-        message:
-          "The database is not configured on this deployment. See .env.example.",
-      },
-      { status: 503 },
-    );
+    return notConfiguredResponse();
   }
   return NextResponse.json(
     {
@@ -126,6 +198,69 @@ export function envelope(
         // update it had actually recorded.
         "Cache-Control": "public, s-maxage=300, stale-while-revalidate=60",
       },
+    },
+  );
+}
+
+/**
+ * The whole public dataset, in one document (CC0). Shared by /api/dataset and
+ * /data/latest.json so the two can never drift. See DATASET.md.
+ */
+export async function datasetPayload() {
+  const [
+    { data: live, error: liveError },
+    { data: ended, error: endedError },
+    { data: upcomingOffers, error: upcomingError },
+    { data: events, error: eventsError },
+    { data: providers, error: providersError },
+    { data: models, error: modelsError },
+    { data: status, error: statusError },
+  ] = await Promise.all([
+    getLiveOffers(),
+    getEndedOffers(),
+    getUpcomingOffers(),
+    getEvents(),
+    getProviders(),
+    getModels(),
+    getStatus(),
+  ]);
+
+  if (liveError) return readErrorResponse("live offers");
+  if (endedError) return readErrorResponse("ended offers");
+  if (upcomingError) return readErrorResponse("upcoming offers");
+  if (eventsError) return readErrorResponse("events");
+  if (providersError) return readErrorResponse("providers");
+  if (modelsError) return readErrorResponse("models");
+  if (statusError) return readErrorResponse("source status");
+
+  return envelope(
+    {
+      live: live.map(serialiseOffer),
+      ended: ended.map(serialiseOffer),
+      upcoming: {
+        offers: upcomingOffers.map(serialiseOffer),
+        events: events.map(serialiseEvent),
+      },
+      providers: providers.map(serialiseProvider),
+      models: models.map(serialiseModel),
+      events: events.map(serialiseEvent),
+    },
+    {
+      counts: {
+        offers: live.length,
+        providers: providers.length,
+        models: models.length,
+        events: events.length,
+        ended: ended.length,
+      },
+      verificationCycleHours: 5,
+      sources: {
+        total: status?.sources_total ?? null,
+        ok: status?.sources_ok ?? null,
+        impaired: status?.sources_unhealthy ?? null,
+      },
+      lastSweepAt: iso(status?.last_sweep_at ?? null),
+      nextSweepAt: iso(status?.next_sweep_at ?? null),
     },
   );
 }

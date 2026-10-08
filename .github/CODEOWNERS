@@ -1,0 +1,14 @@
+# Default owner for everything in the repo.
+* @vikramdex-ops
+
+# The pipeline and its invariants: schema, RPCs and the collector.
+# Changes here can break the "a failed source is never an ended offer" rule,
+# so they always need the maintainer's review.
+/supabase/migrations/          @vikramdex-ops
+/supabase/functions/           @vikramdex-ops
+
+# Public contracts.
+/API.md                        @vikramdex-ops
+/DATASET.md                    @vikramdex-ops
+/METHODOLOGY.md                @vikramdex-ops
+/app/api/                      @vikramdex-ops

@@ -1,0 +1,57 @@
+name: Discover
+
+# Triggers a discovery/sweep on demand by calling the deployed Supabase Edge
+# Function, without waiting for the five-hour gate. This is an operator tool:
+# it needs the project ref and the secret key, and it is a no-op (with a notice)
+# when those are not configured — so a fork that has not set them yet still has
+# a green workflow.
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: Why are you triggering a sweep?
+        required: false
+        default: manual
+
+permissions:
+  contents: read
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check configuration
+        id: cfg
+        env:
+          REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        run: |
+          if [ -z "${REF}" ] || [ -z "${KEY}" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::SUPABASE_PROJECT_REF and SUPABASE_SECRET_KEY are not set; skipping discovery."
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Invoke radar-sweep
+        if: steps.cfg.outputs.configured == 'true'
+        env:
+          REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          REASON: ${{ github.event.inputs.reason }}
+        run: |
+          set -euo pipefail
+          echo "Requesting a sweep (reason: ${REASON})"
+          status=$(curl -sS -o /tmp/sweep.json -w "%{http_code}" \
+            -X POST "https://${REF}.functions.supabase.co/radar-sweep" \
+            -H "Authorization: Bearer ${KEY}" \
+            -H "Content-Type: application/json" \
+            -d '{"trigger":"github-actions"}')
+          echo "HTTP ${status}"
+          cat /tmp/sweep.json | head -c 2000 || true
+          echo
+          if [ "${status}" -lt 200 ] || [ "${status}" -ge 300 ]; then
+            echo "::error::radar-sweep returned HTTP ${status}"
+            exit 1
+          fi

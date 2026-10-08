@@ -1,0 +1,117 @@
+name: ➕ New provider / source
+description: Propose a provider whose free AI access is not yet tracked
+title: "[provider] "
+labels: ["new-provider", "data"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for adding a source. Every field here maps to something the
+        collector needs, and every claim needs a source we can read. See
+        [METHODOLOGY.md](https://github.com/vikramdex-ops/free-pool-radar/blob/main/METHODOLOGY.md).
+  - type: input
+    id: provider
+    attributes:
+      label: Provider
+      placeholder: e.g. Example AI
+    validations:
+      required: true
+  - type: input
+    id: official-url
+    attributes:
+      label: Official URL
+      placeholder: https://example.ai
+    validations:
+      required: true
+  - type: input
+    id: free-url
+    attributes:
+      label: Free access URL
+      description: The exact page or endpoint where the free terms are published.
+      placeholder: https://example.ai/pricing
+    validations:
+      required: true
+  - type: dropdown
+    id: access
+    attributes:
+      label: Access type
+      options:
+        - shared_pool
+        - free_tier
+        - rotating_free_model
+        - sponsored_inference
+        - promotional_event
+        - free_credits
+        - keyless
+        - free_trial
+    validations:
+      required: true
+  - type: input
+    id: models
+    attributes:
+      label: Models
+      description: Model ids or labels available on the free route.
+      placeholder: gpt-luna-free, llama-3.x
+    validations:
+      required: true
+  - type: input
+    id: quota
+    attributes:
+      label: Quota
+      description: The published limit, in the provider's own units. Say "not stated" if they do not publish one.
+      placeholder: 10B weighted tokens (pool) / 1000 req/day
+    validations:
+      required: true
+  - type: input
+    id: reset
+    attributes:
+      label: Reset period
+      placeholder: daily / monthly / n/a (shared pool)
+    validations:
+      required: false
+  - type: dropdown
+    id: payment
+    attributes:
+      label: Payment / card required?
+      options:
+        - No payment method required
+        - Card required
+        - Payment required
+        - Not stated
+    validations:
+      required: true
+  - type: input
+    id: api-docs
+    attributes:
+      label: API documentation URL
+      placeholder: https://example.ai/docs
+    validations:
+      required: false
+  - type: input
+    id: evidence
+    attributes:
+      label: Evidence URL
+      description: The single best source for the free claim.
+    validations:
+      required: true
+  - type: dropdown
+    id: verification
+    attributes:
+      label: Verification level
+      options:
+        - live_api
+        - official_docs
+        - official_event_page
+        - official_announcement
+        - official_social
+        - secondary
+        - community
+    validations:
+      required: true
+  - type: textarea
+    id: why-free
+    attributes:
+      label: What makes this genuinely free?
+      description: In your own words, and date it. Why does it qualify as free under the methodology?
+    validations:
+      required: true

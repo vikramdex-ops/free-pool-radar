@@ -1,0 +1,27 @@
+name: Verify deployed data
+
+# A public API that silently returns an empty array is worse than one that
+# fails loudly. This job checks the deployed endpoints from outside and fails
+# if a route is unreachable or has stopped returning data. It needs no secrets,
+# which is why it can run in the open on a schedule.
+on:
+  schedule:
+    - cron: "43 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check the deployed API
+        env:
+          RADAR_BASE_URL: ${{ vars.RADAR_BASE_URL || 'https://free-pool-radar.vercel.app' }}
+        run: node scripts/verify-data.mjs

@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="560" viewBox="0 0 1000 560" role="img" aria-label="Provider page answering 'why is this free?' with source, quota, reset period, restrictions and verification time">
+  <rect width="1000" height="560" rx="14" fill="#06080c"/>
+  <rect x="0.5" y="0.5" width="999" height="559" rx="14" fill="none" stroke="#1c2634"/>
+  <circle cx="44" cy="40" r="5" fill="#3ddc84"/>
+  <text x="58" y="45" font-family="JetBrains Mono, monospace" font-size="13" letter-spacing="1.5" fill="#8595aa">PROVIDER</text>
+  <text x="40" y="92" font-family="Archivo, system-ui, sans-serif" font-size="30" font-weight="700" fill="#e9eef6">APMix</text>
+  <rect x="190" y="66" width="66" height="26" rx="13" fill="none" stroke="#3ddc84"/>
+  <text x="223" y="84" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="12" fill="#3ddc84">LIVE</text>
+  <line x1="0" y1="118" x2="1000" y2="118" stroke="#1c2634"/>
+  <!-- why free panel -->
+  <rect x="40" y="146" width="440" height="240" rx="10" fill="#0c1017" stroke="#1c2634"/>
+  <text x="60" y="180" font-family="JetBrains Mono, monospace" font-size="12" letter-spacing="1" fill="#8595aa">WHY IS THIS FREE?</text>
+  <g font-family="Archivo, system-ui, sans-serif" font-size="14" fill="#e9eef6">
+    <text x="60" y="216"><tspan fill="#3ddc84">✓</tspan>  Official source recorded</text>
+    <text x="60" y="248"><tspan fill="#3ddc84">✓</tspan>  Last verified 2h ago</text>
+    <text x="60" y="280"><tspan fill="#3ddc84">✓</tspan>  No payment method required</text>
+    <text x="60" y="312"><tspan fill="#3ddc84">✓</tspan>  API endpoint available</text>
+    <text x="60" y="344"><tspan fill="#f2b134">!</tspan>  Requires a free account + API key</text>
+  </g>
+  <!-- facts -->
+  <rect x="500" y="146" width="460" height="240" rx="10" fill="#0c1017" stroke="#1c2634"/>
+  <text x="520" y="180" font-family="JetBrains Mono, monospace" font-size="12" letter-spacing="1" fill="#8595aa">THE FACTS</text>
+  <g font-family="JetBrains Mono, monospace" font-size="13">
+    <text x="520" y="216" fill="#8595aa">source</text><text x="660" y="216" fill="#e9eef6">apmix.ai/event</text>
+    <text x="520" y="248" fill="#8595aa">quota</text><text x="660" y="248" fill="#e9eef6">shared pool · 10B weighted tokens</text>
+    <text x="520" y="280" fill="#8595aa">reset</text><text x="660" y="280" fill="#e9eef6">n/a (pool, not a window)</text>
+    <text x="520" y="312" fill="#8595aa">models</text><text x="660" y="312" fill="#e9eef6">gpt-luna-free</text>
+    <text x="520" y="344" fill="#8595aa">evidence</text><text x="660" y="344" fill="#74b4ff">official_event_page</text>
+  </g>
+  <!-- history -->
+  <rect x="40" y="410" width="920" height="118" rx="10" fill="#0c1017" stroke="#1c2634"/>
+  <text x="60" y="442" font-family="JetBrains Mono, monospace" font-size="12" letter-spacing="1" fill="#8595aa">HISTORY</text>
+  <g font-family="JetBrains Mono, monospace" font-size="13" fill="#e9eef6">
+    <circle cx="66" cy="470" r="4" fill="#3ddc84"/><text x="80" y="475">pool_started</text><text x="330" y="475" fill="#8595aa">2026-10-08</text>
+    <circle cx="66" cy="502" r="4" fill="#f2b134"/><text x="80" y="507">rate_limit_changed</text><text x="330" y="507" fill="#8595aa">2026-10-05</text>
+    <text x="940" y="475" text-anchor="end" fill="#8595aa">every observation kept</text>
+  </g>
+  <text x="500" y="552" text-anchor="middle" font-family="Archivo Narrow, sans-serif" font-size="12" fill="#55606f">Interface illustration</text>
+</svg>

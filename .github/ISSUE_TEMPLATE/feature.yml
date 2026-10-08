@@ -1,0 +1,44 @@
+name: ✨ Feature request
+description: Suggest a feature, integration, API change or docs improvement
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the need, not just the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Public API
+        - Datasets / exports
+        - RSS / feed / webhooks
+        - MCP server
+        - Frontend
+        - Collector / methodology
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: checkboxes
+    id: invariants
+    attributes:
+      label: Project invariants
+      description: This project has a few rules it does not break. Confirm your request respects them.
+      options:
+        - label: This does not add ranking, scoring or "best/top" language
+          required: true
+        - label: This does not convert or normalise a provider's units
+          required: true
+        - label: This does not delete or rewrite history
+          required: true

@@ -1,0 +1,27 @@
+name: Release
+
+# On a version tag, publish a GitHub release with generated notes. The changelog
+# stays the human-edited source of truth in CHANGELOG.md; these notes are a
+# convenience, not a replacement.
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}

@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="520" viewBox="0 0 1000 520" role="img" aria-label="Change timeline: new free pool detected, rate limit changed, provider ended free access, new model added">
+  <rect width="1000" height="520" rx="14" fill="#06080c"/>
+  <rect x="0.5" y="0.5" width="999" height="519" rx="14" fill="none" stroke="#1c2634"/>
+  <text x="40" y="44" font-family="Archivo, system-ui, sans-serif" font-size="16" font-weight="700" letter-spacing="1.5" fill="#e9eef6">CHANGE TIMELINE</text>
+  <text x="960" y="44" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="12" fill="#8595aa">APPEND-ONLY · NOTHING DELETED</text>
+  <line x1="0" y1="64" x2="1000" y2="64" stroke="#1c2634"/>
+  <text x="40" y="108" font-family="JetBrains Mono, monospace" font-size="12" letter-spacing="1.5" fill="#8595aa">TODAY</text>
+  <g font-family="Archivo, system-ui, sans-serif">
+    <circle cx="52" cy="150" r="6" fill="#3ddc84"/>
+    <text x="86" y="146" font-size="16" font-weight="600" fill="#e9eef6">New free pool detected</text>
+    <text x="86" y="170" font-size="13" fill="#8595aa">APMix opened a shared token pool · official event page</text>
+    <text x="960" y="156" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="12" fill="#8595aa">10:12 UTC</text>
+
+    <circle cx="52" cy="222" r="6" fill="#f2b134"/>
+    <text x="86" y="218" font-size="16" font-weight="600" fill="#e9eef6">Rate limit changed</text>
+    <text x="86" y="242" font-size="13" fill="#8595aa">OpenRouter: 50 req/day → 1000 req/day · official docs</text>
+    <text x="960" y="228" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="12" fill="#8595aa">07:05 UTC</text>
+
+    <circle cx="52" cy="294" r="6" fill="#ff7070"/>
+    <text x="86" y="290" font-size="16" font-weight="600" fill="#e9eef6">Provider ended free access</text>
+    <text x="86" y="314" font-size="13" fill="#8595aa">Chutes retired its free tier · record retained with evidence</text>
+    <text x="960" y="300" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="12" fill="#8595aa">03:41 UTC</text>
+
+    <circle cx="52" cy="366" r="6" fill="#74b4ff"/>
+    <text x="86" y="362" font-size="16" font-weight="600" fill="#e9eef6">New model added</text>
+    <text x="86" y="386" font-size="13" fill="#8595aa">Groq: llama-3.x now served on a free route · live API</text>
+    <text x="960" y="372" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="12" fill="#8595aa">01:20 UTC</text>
+  </g>
+  <line x1="40" y1="420" x2="960" y2="420" stroke="#1c2634"/>
+  <text x="40" y="452" font-family="JetBrains Mono, monospace" font-size="12" fill="#8595aa">GET /api/changes?type=rate_limit_changed&amp;limit=50</text>
+  <text x="960" y="452" text-anchor="end" font-family="Archivo Narrow, sans-serif" font-size="12" fill="#55606f">every row carries its own source URL and evidence</text>
+  <text x="500" y="496" text-anchor="middle" font-family="Archivo Narrow, sans-serif" font-size="12" fill="#55606f">Interface illustration</text>
+</svg>

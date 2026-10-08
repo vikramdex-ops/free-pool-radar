@@ -117,6 +117,13 @@ jobs:
           done
           exit "$failed"
 
+      # The MCP server is a separate surface from the website and speaks a
+      # protocol the type checker cannot see. This handshake smoke test starts
+      # it, sends initialize + tools/list, and asserts the JSON-RPC answers —
+      # so a broken server is caught here rather than by a user's agent.
+      - name: MCP server smoke test
+        run: node mcp/smoke.mjs
+
       - name: Build
         run: npx next build
 

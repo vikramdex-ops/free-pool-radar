@@ -1,1 +1,14 @@
 blank_issues_enabled: true
+contact_links:
+  - name: 📖 Methodology — how we verify
+    url: https://github.com/vikramdex-ops/free-pool-radar/blob/main/METHODOLOGY.md
+    about: The rules every figure must satisfy before it is published.
+  - name: 🧩 API reference
+    url: https://github.com/vikramdex-ops/free-pool-radar/blob/main/API.md
+    about: Every public endpoint, the response envelope, filters and status codes.
+  - name: 📦 Datasets
+    url: https://github.com/vikramdex-ops/free-pool-radar/blob/main/DATASET.md
+    about: Open (CC0) JSON/CSV exports and the Atom feed.
+  - name: 🔐 Report a security issue
+    url: https://github.com/vikramdex-ops/free-pool-radar/security/advisories/new
+    about: Please report vulnerabilities privately, not as a public issue.

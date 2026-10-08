@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="620" viewBox="0 0 1000 620" role="img" aria-label="Free Pool Radar homepage: 153 free routes, 39 providers, 133 models, and a live status table">
+  <rect width="1000" height="620" rx="14" fill="#06080c"/>
+  <rect x="0.5" y="0.5" width="999" height="619" rx="14" fill="none" stroke="#1c2634"/>
+  <!-- nav -->
+  <circle cx="40" cy="34" r="5" fill="#3ddc84"/>
+  <text x="54" y="39" font-family="Archivo, system-ui, sans-serif" font-size="15" font-weight="700" letter-spacing="1.5" fill="#e9eef6">FREE POOL RADAR</text>
+  <text x="960" y="39" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="12" fill="#8595aa">LIVE · 2026-10-08 07:07 UTC</text>
+  <line x1="0" y1="58" x2="1000" y2="58" stroke="#1c2634"/>
+  <!-- headline -->
+  <text x="40" y="118" font-family="Archivo, system-ui, sans-serif" font-size="34" font-weight="700" fill="#e9eef6">Every free AI inference pool.</text>
+  <text x="40" y="158" font-family="Archivo, system-ui, sans-serif" font-size="34" font-weight="700" fill="#e9eef6">Every disappearing quota.</text>
+  <text x="40" y="198" font-family="Archivo, system-ui, sans-serif" font-size="34" font-weight="700" fill="#3ddc84">One live radar.</text>
+  <!-- stat strip -->
+  <g font-family="JetBrains Mono, monospace">
+    <rect x="40" y="230" width="212" height="96" rx="10" fill="#0c1017" stroke="#1c2634"/>
+    <text x="60" y="266" font-size="34" font-weight="600" fill="#3ddc84">153</text>
+    <text x="60" y="300" font-size="12" fill="#8595aa">FREE ROUTES</text>
+    <rect x="268" y="230" width="212" height="96" rx="10" fill="#0c1017" stroke="#1c2634"/>
+    <text x="288" y="266" font-size="34" font-weight="600" fill="#e9eef6">39</text>
+    <text x="288" y="300" font-size="12" fill="#8595aa">PROVIDERS</text>
+    <rect x="496" y="230" width="212" height="96" rx="10" fill="#0c1017" stroke="#1c2634"/>
+    <text x="516" y="266" font-size="34" font-weight="600" fill="#e9eef6">133</text>
+    <text x="516" y="300" font-size="12" fill="#8595aa">MODELS</text>
+    <rect x="724" y="230" width="236" height="96" rx="10" fill="#0c1017" stroke="#1c2634"/>
+    <text x="744" y="266" font-size="34" font-weight="600" fill="#74b4ff">12</text>
+    <text x="744" y="300" font-size="12" fill="#8595aa">SOURCES VERIFIED</text>
+  </g>
+  <!-- table -->
+  <rect x="40" y="356" width="920" height="224" rx="10" fill="#0c1017" stroke="#1c2634"/>
+  <text x="60" y="386" font-family="JetBrains Mono, monospace" font-size="12" font-weight="600" letter-spacing="1" fill="#a2b2c6">PROVIDER</text>
+  <text x="330" y="386" font-family="JetBrains Mono, monospace" font-size="12" font-weight="600" letter-spacing="1" fill="#a2b2c6">MODEL</text>
+  <text x="700" y="386" font-family="JetBrains Mono, monospace" font-size="12" font-weight="600" letter-spacing="1" fill="#a2b2c6">ACCESS</text>
+  <text x="900" y="386" font-family="JetBrains Mono, monospace" font-size="12" font-weight="600" letter-spacing="1" fill="#a2b2c6">VERIFIED</text>
+  <line x1="60" y1="398" x2="940" y2="398" stroke="#1c2634"/>
+  <g font-family="JetBrains Mono, monospace" font-size="14" fill="#e9eef6">
+    <circle cx="66" cy="430" r="4" fill="#3ddc84"/>
+    <text x="80" y="435">APMix</text><text x="330" y="435" fill="#a2b2c6">gpt-luna-free</text>
+    <text x="700" y="435" fill="#74b4ff">shared_pool</text><text x="900" y="435" fill="#8595aa">2h ago</text>
+
+    <circle cx="66" cy="468" r="4" fill="#3ddc84"/>
+    <text x="80" y="473">Groq</text><text x="330" y="473" fill="#a2b2c6">llama-3.x</text>
+    <text x="700" y="473" fill="#74b4ff">free_tier</text><text x="900" y="473" fill="#8595aa">1h ago</text>
+
+    <circle cx="66" cy="506" r="4" fill="#f2b134"/>
+    <text x="80" y="511">OpenRouter</text><text x="330" y="511" fill="#a2b2c6">rotating :free</text>
+    <text x="700" y="511" fill="#f2b134">changed</text><text x="900" y="511" fill="#8595aa">now</text>
+
+    <circle cx="66" cy="544" r="4" fill="#ff7070"/>
+    <text x="80" y="549">Chutes</text><text x="330" y="549" fill="#a2b2c6">free tier</text>
+    <text x="700" y="549" fill="#ff7070">ended</text><text x="900" y="549" fill="#8595aa">retained</text>
+  </g>
+  <text x="500" y="606" text-anchor="middle" font-family="Archivo Narrow, sans-serif" font-size="12" fill="#55606f">Interface illustration · figures read from the live database at render time</text>
+</svg>

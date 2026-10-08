@@ -1,0 +1,59 @@
+name: 🔄 Changed offer
+description: A tracked provider's free access changed — quota, status, gating or terms
+title: "[data] "
+labels: ["data"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this when the site shows something that is no longer true. Include
+        what the site currently says and what the source says now.
+  - type: input
+    id: provider
+    attributes:
+      label: Provider / offer
+      description: Provider name, and the model or offer page if relevant.
+    validations:
+      required: true
+  - type: input
+    id: current-url
+    attributes:
+      label: Link on the radar
+      placeholder: https://free-pool-radar.vercel.app/providers/example
+    validations:
+      required: false
+  - type: input
+    id: source
+    attributes:
+      label: Official source URL for the new reading
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What changed
+      options:
+        - Rate limit / quota changed
+        - Offer ended (access withdrawn)
+        - Offer became card- or payment-gated
+        - New model added to the free route
+        - Model removed from the free route
+        - Pool started / extended / exhausted / cancelled
+        - Status changed
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What does the source say now?
+      description: The old value vs. the new value. Date it ("as observed YYYY-MM-DD").
+    validations:
+      required: true
+  - type: input
+    id: verified-at
+    attributes:
+      label: When did you verify this? (UTC)
+      placeholder: 2026-10-08 07:00 UTC
+    validations:
+      required: false
