@@ -1,6 +1,12 @@
 import Link from "next/link";
 import type { ChangeWithProvider, OfferWithProvider } from "@/lib/db";
-import { CHANGE_LABEL, FIELD_LABEL, ago, stampUTC } from "@/lib/format";
+import {
+  CHANGE_LABEL,
+  FIELD_LABEL,
+  OFFER_TYPE_LABEL,
+  ago,
+  stampUTC,
+} from "@/lib/format";
 import { EmptyState, EvidenceLink } from "./ui";
 
 /**
@@ -142,10 +148,64 @@ export function ChangeFeed({
   );
 }
 
+/**
+ * Collapse change rows into one visual entry per distinct change.
+ *
+ * Two change rows exist for a single observed difference: the sweep records
+ * the same `pool remaining: 25 -> 22` against the offer and against the event,
+ * with an identical timestamp (observed as ids 351 and 352). Merging happens
+ * because groupChanges groups by provider, type and moment - and then each row
+ * was rendered as its own subject, so the same value change appeared twice.
+ *
+ * Deduplication is by the tuple a reader would see: subject, field, old, new.
+ * Nothing is dropped that a reader could tell apart, and no stored row is
+ * altered - this is a rendering rule, not a rewrite of history.
+ *
+ * The field label is only repeated in the detail when the subject is an offer
+ * name. When there is no offer the subject *is* the field, so repeating it
+ * produced "event statusevent status".
+ */
+interface Entry {
+  key: string;
+  label: string;
+  offerId: number | null;
+  added: string | null;
+  showField: string | null;
+  oldValue: string | null;
+  newValue: string | null;
+}
+
+function collapse(rows: ChangeWithProvider[]): Entry[] {
+  const seen = new Map<string, Entry>();
+  for (const c of rows) {
+    const hasOffer = Boolean(c.offer);
+    const field = c.field ? (FIELD_LABEL[c.field] ?? c.field) : null;
+    const label = hasOffer
+      ? (c.offer?.model_label ?? "")
+      : (field ?? c.field ?? "Event");
+
+    const added =
+      c.change_type === "new" ? (c.new_value?.replace(/_/g, " ") ?? "") : null;
+
+    const e: Entry = {
+      key: [label, added, c.field, c.old_value, c.new_value].join("|"),
+      label,
+      offerId: hasOffer && c.offer_id ? c.offer_id : null,
+      added,
+      showField: hasOffer ? field : null,
+      oldValue: c.field ? readable(c.old_value) : null,
+      newValue: c.field ? readable(c.new_value) : null,
+    };
+    if (e.key !== "|||" && !seen.has(e.key)) seen.set(e.key, e);
+  }
+  return [...seen.values()];
+}
+
 function GroupRow({ group, now }: { group: Group; now: number }) {
   const { provider, rows, first } = group;
-  const count = rows.length;
-  const named = rows.slice(0, NAME_LIMIT);
+  const entries = collapse(rows);
+  const count = entries.length;
+  const named = entries.slice(0, NAME_LIMIT);
   const rest = count - named.length;
 
   return (
@@ -166,7 +226,7 @@ function GroupRow({ group, now }: { group: Group; now: number }) {
           )}
           {count > 1 ? (
             <span className="badge badge-info">
-              {count} route{count === 1 ? "" : "s"}
+              {count} changes
             </span>
           ) : null}
         </div>
@@ -178,38 +238,30 @@ function GroupRow({ group, now }: { group: Group; now: number }) {
         {/* The subject of each change, named. Without this, several genuinely
             different discoveries read as identical lines. */}
         <ul className="feed-subjects">
-          {named.map((c) => (
-            <li key={c.id} className="feed-subject">
-              {c.offer ? (
-                c.offer_id ? (
-                  <Link href={`/evidence/${c.offer_id}`} className="mono">
-                    {c.offer.model_label}
-                  </Link>
-                ) : (
-                  <span className="mono">{c.offer.model_label}</span>
-                )
+          {named.map((e) => (
+            <li key={e.key} className="feed-subject">
+              {e.offerId ? (
+                <Link href={`/evidence/${e.offerId}`} className="mono">
+                  {e.label}
+                </Link>
               ) : (
-                <span className="mono">
-                  {FIELD_LABEL[c.field ?? ""] ?? c.field ?? "Event"}
-                </span>
+                <span className="mono">{e.label}</span>
               )}
-              {c.change_type === "new" ? (
+              {e.added !== null ? (
+                <span className="annot">added as {e.added}</span>
+              ) : e.oldValue !== null ? (
                 <span className="annot">
-                  added as {c.new_value?.replace(/_/g, " ")}
-                </span>
-              ) : c.field ? (
-                <span className="annot">
-                  {FIELD_LABEL[c.field] ?? c.field}:{" "}
-                  <span className="mono">{readable(c.old_value)}</span>
+                  {e.showField ? `${e.showField}: ` : null}
+                  <span className="mono">{e.oldValue}</span>
                   {" → "}
-                  <span className="mono strong">{readable(c.new_value)}</span>
+                  <span className="mono strong">{e.newValue}</span>
                 </span>
               ) : null}
             </li>
           ))}
           {rest > 0 ? (
             <li className="annot feed-subject">
-              and {rest} more route{rest === 1 ? "" : "s"} at this provider
+              and {rest} more change{rest === 1 ? "" : "s"} at this provider
             </li>
           ) : null}
         </ul>
@@ -275,6 +327,9 @@ export function EndedArchive({
           {offers.map((o) => (
             <li key={o.id} className="panel ended-row">
               <div className="ended-head">
+                {/* The title carries the provider AND the access type so the row
+                    still reads standalone when skimmed out of order - "Free
+                    tier" on its own tells a reader nothing about whose. */}
                 <h3 className="ended-provider">
                   {o.provider ? (
                     <Link href={`/providers/${o.provider.slug}`} className="link">
@@ -283,12 +338,28 @@ export function EndedArchive({
                   ) : (
                     "Unknown provider"
                   )}
+                  <span className="ended-type">
+                    {OFFER_TYPE_LABEL[o.offer_type]}
+                  </span>
                 </h3>
                 <p className="mono ended-date">{stampUTC(o.ended_at)}</p>
               </div>
               <p className="ended-offer mono">{o.model_label}</p>
+              <p className="ended-plain">
+                No longer offered as free access.
+              </p>
+              {/* Stored reason kept verbatim, one click away. Several reasons
+                  quote internal repair notes verbatim, which reads as a system
+                  error to anyone outside the project. Displaying it unchanged
+                  matters more than tidying it, so it moves behind a
+                  disclosure instead of being rewritten. */}
               {o.exhaustion_condition ? (
-                <p className="annot">Reason: {o.exhaustion_condition}</p>
+                <details className="tech-note">
+                  <summary className="annot">Technical note</summary>
+                  <p className="annot mono tech-note-body">
+                    {o.exhaustion_condition}
+                  </p>
+                </details>
               ) : null}
               <div style={{ marginTop: "0.5rem" }}>
                 <EvidenceLink offerId={o.id} />
@@ -326,43 +397,43 @@ export function SourceHealthPanel({
   nextSweep: string | null;
   unhealthy: number;
 }) {
+  const allOk = sourcesTotal > 0 && unhealthy === 0;
   return (
-    <div className="panel health">
-      <div className="health-row">
-        <div>
-          <p className="label">Sources responding</p>
-          <p className="mono health-figure">
-            {sourcesOk} / {sourcesTotal}
-          </p>
-        </div>
-        <div>
-          <p className="label">Last sweep</p>
-          <p className="mono health-figure">
-            {stampUTC(lastSweep) ?? "Not yet run"}
-          </p>
-        </div>
-        <div>
-          <p className="label">Next sweep</p>
-          <p className="mono health-figure">
-            {stampUTC(nextSweep) ?? "Not scheduled"}
-          </p>
-        </div>
-        <div>
-          <p className="label">Impaired</p>
-          <p
-            className="mono health-figure"
-            style={{ color: unhealthy ? "var(--t-upcoming)" : "var(--t-live)" }}
-          >
-            {unhealthy}
-          </p>
-        </div>
+    <div className="status-bar" role="status" aria-label="Radar status">
+      <div className="status-cell">
+        {/* State is never colour alone: the dot is paired with a word. */}
+        <span
+          className={`dot ${allOk ? "dot-live" : "dot-upcoming"}`}
+          aria-hidden="true"
+        />
+        <span className="label">Sources</span>
+        <span className="mono status-figure">
+          {sourcesOk} / {sourcesTotal}
+        </span>
+        {!allOk ? (
+          <span className="annot status-flag">{unhealthy} impaired</span>
+        ) : null}
+      </div>
+
+      <div className="status-cell">
+        <span className="label">Last sweep</span>
+        <span className="mono status-figure">
+          {stampUTC(lastSweep) ?? "Not yet run"}
+        </span>
+      </div>
+
+      <div className="status-cell">
+        <span className="label">Next</span>
+        <span className="mono status-figure">
+          {stampUTC(nextSweep) ?? "Not scheduled"}
+        </span>
       </div>
 
       {unhealthy > 0 ? (
-        <p className="annot" style={{ marginTop: "1rem" }}>
-          A source that is not responding does <strong>not</strong> mean its
-          offers ended. Those offers keep their last verified values and are
-          marked stale as their verification ages.
+        <p className="annot status-note">
+          An impaired source is <strong>not</strong> an ended offer. Its offers
+          keep their last verified values and age to stale; nothing is marked
+          ended because a fetch failed.
         </p>
       ) : null}
     </div>

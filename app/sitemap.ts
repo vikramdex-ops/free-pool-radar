@@ -40,6 +40,7 @@ const STATIC_ROUTES = [
   "/compare",
   "/timeline",
   "/methodology",
+  "/developers",
   "/ecosystem",
 ];
 

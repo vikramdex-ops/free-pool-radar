@@ -1,4 +1,4 @@
-import { num } from "@/lib/format";
+import { num, stampUTC } from "@/lib/format";
 
 /**
  * The headline figures (§18).
@@ -28,6 +28,7 @@ export function HeroStats({
   sourcesLive,
   sourcesTotal,
   withdrawn,
+  lastSweep,
 }: {
   modelIds: number;
   /** Rows in the models table, which is a larger population than distinct ids. */
@@ -38,10 +39,14 @@ export function HeroStats({
   sourcesLive: number;
   sourcesTotal: number;
   withdrawn: number;
+  /** The sweep the figures actually describe, not the date the page rendered. */
+  lastSweep: string | null;
 }) {
   // The date the figures describe, not the date the page was built. A figure
-  // that does not say when it was true cannot be stale-detected.
-  const asOf = new Date().toISOString().slice(0, 10);
+  // that does not say when it was true cannot be stale-detected. The sweep
+  // timestamp is authoritative; today is only a fallback when the sweep has
+  // not run yet.
+  const asOf = lastSweep ? stampUTC(lastSweep) : new Date().toISOString().slice(0, 10);
 
   const stats = [
     {
@@ -59,12 +64,12 @@ export function HeroStats({
     {
       v: `${num(sourcesLive)} / ${num(sourcesTotal)}`,
       l: "Sources responding",
-      p: "sources responding at the last sweep",
+      p: `${num(sourcesTotal - sourcesLive)} impaired at the last sweep`,
     },
     {
       v: num(withdrawn),
       l: "Withdrawn offers",
-      p: `ended routes, kept on the record of ${num(liveOffers)} live`,
+      p: `kept on the record of ${num(liveOffers)} live routes`,
     },
   ];
 

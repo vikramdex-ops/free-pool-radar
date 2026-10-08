@@ -81,15 +81,30 @@ check("home page renders no provider-index section", () => {
 
 // 3. The live preview stays capped, and lower than the 40 it used. An
 //    uncapped preview IS the /live replica.
+// The preview is now LivePreview, which groups routes by provider: §17 also
+// forbids rendering the same route twice inside one section, and the old
+// rendering did exactly that (six cards, then a twelve-row table from the
+// same array). Two caps are declared because grouping by provider lets a
+// small provider count still cover a lot of routes.
 check("live preview is capped below 40", () => {
-  const m = page.match(/<OfferLedger\b[\s\S]*?\/>/);
-  assert.ok(m, "app/page.tsx no longer renders an OfferLedger preview at all");
+  const m = page.match(/<LivePreview\b[\s\S]*?\/>/);
+  assert.ok(m, "app/page.tsx no longer renders a LivePreview preview at all");
   const limit = m[0].match(/limit=\{(\d+)\}/);
-  assert.ok(limit, "the OfferLedger preview declares no limit prop");
+  assert.ok(limit, "the LivePreview declares no limit prop");
   const n = Number(limit[1]);
   assert.ok(
     n > 0 && n < 40,
-    `the live preview cap is ${n}; it must be a real cap below 40`,
+    `the provider cap is ${n}; it must be a real cap below 40`,
+  );
+
+  // The route budget is what actually bounds the section's size.
+  const preview = read("components/LivePreview.tsx");
+  const budget = preview.match(/maxRoutes = (\d+)/);
+  assert.ok(budget, "LivePreview declares no route budget");
+  const b = Number(budget[1]);
+  assert.ok(
+    b > 0 && b < 40,
+    `the route budget is ${b}; it must be a real cap below 40`,
   );
 });
 

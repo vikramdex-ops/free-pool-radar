@@ -12,7 +12,7 @@ import Link from "next/link";
 import { ChangeFeed, EndedArchive, SourceHealthPanel } from "@/components/Feed";
 import { Hero, Upcoming } from "@/components/Hero";
 import { REPO_URL } from "@/components/JsonLd";
-import { OfferLedger } from "@/components/Ledger";
+import { LivePreview } from "@/components/LivePreview";
 
 import { ReadError } from "@/components/ui";
 import { Methodology } from "@/components/Methodology";
@@ -92,6 +92,7 @@ export default async function Page() {
             sourcesLive: sourcesOk,
             sourcesTotal,
             withdrawn: ended.length,
+            lastSweep: status?.last_sweep_at ?? null,
           }}
         />
         )}
@@ -103,14 +104,17 @@ export default async function Page() {
               hero - PRODUCT.md:1606 blesses a distinct hero title and the
               approval says keep h1.hero-title - so this block carries the
               label and the lede and no heading of its own. */}
+          {/* The page-head stays: every top-level route opens with the same
+              two-element structure (test-home-no-replica). What changed is the
+              copy - it used to restate the product name and describe the page
+              itself. It now orients: what is here, and what to do first. */}
           <header className="page-head">
-            <p className="label">Free Pool Radar</p>
+            <p className="label">Overview</p>
             <p className="page-lede">
-              Every free AI inference route we monitor, with the terms that
-              apply to it and the time we last confirmed it. This page is the
-              overview: it previews each section below and links to the route
-              that holds the complete set. Nothing here is scored, and no two
-              providers are ranked against each other.
+              What is free right now, what is starting, what changed, and what
+              was withdrawn - each with the source it came from and the time it
+              was last confirmed. The complete set, with filters, is one link
+              away. Nothing here is scored or ranked.
             </p>
           </header>
 
@@ -170,15 +174,16 @@ export default async function Page() {
                 </Link>
               </div>
             </div>
-            {/* Capped here so the landing page stays readable; /live holds the
-                complete set with filters. APR-055 lowered this from 40: a
-                preview of 40 rows is a copy of /live with a link at the top,
-                and the reader had to scroll 1,557px past it to reach anything
-                that exists only on this page. */}
+            {/* One rendering of the live set, grouped by provider. It used to
+                be six cards plus a twelve-row table built from this same
+                array, so the section showed the same routes twice and a flat
+                table hid how few providers the twelve rows came from (§17:
+                a route must not be reproduced inside another route). /live
+                holds the complete set with filters. */}
             {offersError ? (
               <ReadError what="Live routes" />
             ) : (
-              <OfferLedger offers={offers} now={now} limit={12} />
+              <LivePreview offers={offers} now={now} limit={6} />
             )}
           </section>
 

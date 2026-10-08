@@ -1885,3 +1885,228 @@ body {
   border-radius: 2px;
   background: color-mix(in oklab, var(--t-ended) 8%, transparent);
 }
+/* ==================================================================
+   landing revamp — status bar, empty strip, live preview, ended
+   disclosure, radar key, developers block, section rhythm.
+
+   Everything here uses the existing token vocabulary: a colour is only ever
+   a state, and every surface that paints an opaque background carries its
+   transition so ink and surface flip together (VIS-047).
+   ================================================================== */
+
+/* --- slim status bar: sweep times and source health, without the
+       full-height panel that made the overview look like a dashboard --- */
+.status-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.5rem;
+  padding: 0.625rem 0.875rem;
+  background: var(--t-raise);
+  border: 1px solid var(--t-rule);
+  border-radius: 2px;
+  transition: background-color var(--t-dur) ease;
+}
+
+.status-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.status-figure {
+  font-size: 0.8125rem;
+  color: var(--t-ink);
+}
+
+.status-flag { color: var(--t-upcoming); }
+
+.status-note {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--t-ink-3);
+  line-height: 1.5;
+}
+
+/* --- the empty state for a section that has nothing to say --- */
+.empty-strip {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin: 0;
+  padding: 0.8125rem 1rem;
+  background: var(--t-panel);
+  border: 1px dashed var(--t-rule);
+  border-radius: 2px;
+  font-family: var(--f-annot);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--t-ink-3);
+  transition: background-color var(--t-dur) ease;
+}
+
+.empty-strip .dot {
+  background: var(--t-stale);
+  flex: none;
+}
+
+/* --- one live preview, grouped by provider --- */
+.live-groups {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 21rem), 1fr));
+}
+
+.live-group { padding: 1.125rem; }
+
+.live-group-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.live-group-name {
+  margin: 0;
+  font-size: 1rem;
+  letter-spacing: -0.01em;
+}
+
+.live-group-head .annot { color: var(--t-ink-3); }
+
+.live-routes {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0.75rem 0 0;
+  border-top: 1px solid var(--t-rule-2);
+  display: grid;
+  gap: 0.625rem;
+}
+
+.live-route {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.live-route-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.live-route-main .key { overflow-wrap: anywhere; }
+
+.live-route-terms {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem;
+  color: var(--t-ink-3);
+}
+
+.live-group-foot {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--t-rule-2);
+}
+
+.live-preview-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--t-rule);
+}
+
+.live-preview-foot .annot { margin: 0; color: var(--t-ink-3); }
+
+/* --- ended rows: a standalone title, a plain sentence, and the stored
+       reason one click away --- */
+.ended-type {
+  display: inline-block;
+  margin-left: 0.5rem;
+  font-family: var(--f-annot);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--t-ink-3);
+}
+
+.ended-plain { margin: 0.25rem 0 0; color: var(--t-ink-2); }
+
+.tech-note {
+  margin-top: 0.5rem;
+  border-top: 1px dashed var(--t-rule-2);
+  padding-top: 0.375rem;
+}
+
+.tech-note summary {
+  cursor: pointer;
+  color: var(--t-ink-3);
+  transition: color var(--t-dur) ease;
+}
+
+.tech-note summary:hover,
+.tech-note summary:focus-visible { color: var(--t-ink-2); }
+
+.tech-note-body {
+  margin: 0.375rem 0 0;
+  overflow-wrap: anywhere;
+  color: var(--t-ink-3);
+}
+
+/* --- the dial's key: what a dot, an arc and the ring encode --- */
+.radar-legend-block { margin-top: 0.875rem; }
+
+.radar-key {
+  margin: 0 0 0.625rem;
+  color: var(--t-ink-3);
+  font-size: 0.6875rem;
+  line-height: 1.6;
+}
+
+/* --- developers --- */
+.dev-block {
+  padding: 1.25rem;
+  transition: background-color var(--t-dur) ease;
+}
+
+.dev-code {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 0.8125rem;
+  line-height: 1.7;
+  color: var(--t-ink);
+}
+
+.dev-code::before { content: "$ "; color: var(--t-ink-3); }
+
+/* --- rhythm (audit 10): the page was a stack of equal-weight bands, so it
+       read as one long scroll. Every second section takes a plate surface and
+       a little more air, which gives the eye something to measure the length
+       against. Content alignment is preserved - the band reaches into the
+       wrap's gutter, not past it. --- */
+section.sect:nth-of-type(even) {
+  background: var(--t-panel);
+  border-block: 1px solid var(--t-rule-2);
+  padding-inline: 1.25rem;
+  margin-inline: -1.25rem;
+  transition: background-color var(--t-dur) ease;
+}
+
+@media (min-width: 768px) {
+  section.sect:nth-of-type(even) { padding-block: 6rem; }
+}

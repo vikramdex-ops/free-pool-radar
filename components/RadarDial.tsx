@@ -276,27 +276,37 @@ function RadarLegend({
   largestPool: string | null;
 }) {
   return (
-    <dl className="radar-legend">
-      <div>
-        <dt className="label">Contacts</dt>
-        <dd className="mono">{contactCount}</dd>
-      </div>
-      <div>
-        <dt className="label">Upcoming</dt>
-        <dd className="mono">
-          {arcs.length ? (
-            <span className="radar-legend-arc" aria-hidden="true" />
-          ) : null}
-          {arcs.length}
-        </dd>
-      </div>
-      <div>
-        <dt className="label">Full-scale pool</dt>
-        {/* The unit is whatever the provider published, not a fixed one: a pool
-            denominated in dollars must not be labelled as tokens (§56). */}
-        <dd className="mono">{largestPool ?? "No pooled offer"}</dd>
-      </div>
-    </dl>
+    <div className="radar-legend-block">
+      {/* One-line key. Without it the dial is decoration: a reader needs to
+          know what a dot, an arc and the outer ring encode before the picture
+          carries any information. */}
+      <p className="annot radar-key">
+        <span aria-hidden="true">●</span> one dot per provider,{" "}
+        <span aria-hidden="true">◜</span> an arc for each announced pool, and
+        the outer ring is drawn to the largest pooled figure.
+      </p>
+      <dl className="radar-legend">
+        <div>
+          <dt className="label">Providers plotted</dt>
+          <dd className="mono">{contactCount}</dd>
+        </div>
+        <div>
+          <dt className="label">Upcoming arcs</dt>
+          <dd className="mono">
+            {arcs.length ? (
+              <span className="radar-legend-arc" aria-hidden="true" />
+            ) : null}
+            {arcs.length}
+          </dd>
+        </div>
+        <div>
+          {/* The unit is whatever the provider published, not a fixed one: a
+              pool denominated in dollars must not be labelled as tokens (§56). */}
+          <dt className="label">Outer ring</dt>
+          <dd className="mono">{largestPool ?? "No pooled offer"}</dd>
+        </div>
+      </dl>
+    </div>
   );
 }
 

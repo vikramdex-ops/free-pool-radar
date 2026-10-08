@@ -17,18 +17,24 @@ const PAGES = [
   { path: "/compare", name: "compare" },
   { path: "/timeline", name: "timeline" },
   { path: "/methodology", name: "methodology" },
+  { path: "/developers", name: "developers" },
   { path: "/admin", name: "admin" },
   { path: "/events/apmix-community-event", name: "event-apmix" },
 ];
 
 const VIEWPORTS = [
   { name: "desktop", width: 1440, height: 1000 },
+  { name: "tablet", width: 768, height: 1024 },
   { name: "mobile", width: 390, height: 844 },
 ];
 
 const browser = await chromium.launch();
 const problems = [];
 
+// VERIFY_CONTENT_ONLY=1 runs just the content, link and reduced-motion
+// checks below: no screenshots, no 72 page loads. The full run is the
+// acceptance test; this flag is for iterating on copy and links.
+if (!process.env.VERIFY_CONTENT_ONLY) {
 for (const vp of VIEWPORTS) {
   for (const theme of ["dark", "light"]) {
     const ctx = await browser.newContext({
@@ -118,11 +124,14 @@ for (const vp of VIEWPORTS) {
           const links = [...list.querySelectorAll("a")].map((a) =>
             a.getAttribute("href"),
           );
+          const region = list.parentElement;
           return {
             missing: false,
             tabIndex: list.tabIndex,
-            role: list.getAttribute("role"),
-            label: list.getAttribute("aria-label"),
+            // The landmark sits on the scroll container: role="region" on the
+            // <ul> itself would replace the list role and orphan its <li>s.
+            role: region?.getAttribute("role") ?? null,
+            label: region?.getAttribute("aria-label") ?? null,
             clipped: list.scrollWidth > list.clientWidth + 1,
             cueShown:
               cue.display !== "none" &&
@@ -213,6 +222,158 @@ for (const vp of VIEWPORTS) {
     }
     await ctx.close();
   }
+}
+
+}
+
+/* ------------------------------------------------------------------ *
+ * Revamp acceptance checks.
+ *
+ * These run once against the home page rather than for every viewport,
+ * because they are about content and links, not layout.
+ * ------------------------------------------------------------------ */
+
+// 1. No forbidden strings reach the rendered HTML. Reconstructed from the
+//    brief's non-negotiables: no ranking language, no social proof, and no
+//    internal repair jargon leaking out of the data.
+// Two lists, because they are banned for different reasons.
+//
+// ALWAYS: ranking claims and social proof. The project takes no payment from
+// providers and does not rank them, so a single one of these is a broken
+// promise rather than a style slip.
+const FORBIDDEN = [
+  "\bbest\b",
+  "#1\b",
+  "\btop\b",
+  "\bpopular\b",
+  "\btrending\b",
+  "\brecommended\b",
+  "\bfeatured\b",
+  "\bleaderboard\b",
+  "trusted by",
+  "testimonial",
+  "subKey",
+  "Do not merge without",
+];
+
+// OUTSIDE DISCLOSURES ONLY: internal repair jargon. The stored reason for an
+// ended offer is displayed verbatim behind a "Technical note" <details>, which
+// the brief requires ("keep the verbatim reason one click away"). So these are
+// banned from prose and headings, and allowed only where the reader has opted
+// in to the raw data.
+const FORBIDDEN_OUTSIDE_DISCLOSURE = ["ORA-\d+", "Superseded by offer"];
+
+// Only what a person can read. Script and style are stripped first: the
+// Next.js flight payload serialises every component tree inline, so a naive
+// tag-strip would treat the RSC copy of a <details> as rendered prose.
+const toText = (html) =>
+  html
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ");
+
+{
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+  const page = await ctx.newPage();
+  await page.goto(BASE + "/", { waitUntil: "networkidle", timeout: 60000 });
+  const content = await page.content();
+  const html = toText(content);
+  const outsideDisclosure = toText(
+    content.replace(/<details[\s\S]*?<\/details>/gi, ""),
+  );
+
+  for (const pat of FORBIDDEN) {
+    const re = new RegExp(pat, "i");
+    const m = re.exec(html);
+    if (m) problems.push(`home renders forbidden string "${m[0]}" (/${pat}/)`);
+  }
+  for (const pat of FORBIDDEN_OUTSIDE_DISCLOSURE) {
+    const m = new RegExp(pat, "i").exec(outsideDisclosure);
+    if (m)
+      problems.push(
+        `home renders internal jargon "${m[0]}" outside a disclosure (/${pat}/)`,
+      );
+  }
+
+  // 2. Every link: internal ones must resolve, external ones must carry the
+  //    rel that stops the opener from reaching this tab.
+  const links = await page.evaluate(() =>
+    [...document.querySelectorAll("a[href]")].map((a) => ({
+      href: a.getAttribute("href"),
+      rel: a.getAttribute("rel") ?? "",
+      target: a.getAttribute("target") ?? "",
+    })),
+  );
+
+  for (const l of links) {
+    const external = /^https?:\/\//i.test(l.href) &&
+      !l.href.startsWith(BASE);
+    if (external) {
+      if (l.target === "_blank" && !/noopener/.test(l.rel)) {
+        problems.push(`external link opens without noopener: ${l.href}`);
+      }
+    }
+  }
+
+  const internal = [
+    ...new Set(
+      links
+        .map((l) => l.href)
+        .filter((h) => h && (h.startsWith("/") || h.startsWith("#")))
+        .map((h) => h.split("#")[0])
+        .filter(Boolean),
+    ),
+  ];
+  for (const path of internal) {
+    if (path.startsWith("/api/") || path.endsWith(".json") || path.endsWith(".csv")) {
+      // Route handlers are asserted directly rather than through the page.
+      continue;
+    }
+    try {
+      const r = await fetch(BASE + path, { redirect: "follow" });
+      if (r.status >= 400) problems.push(`link ${path} -> ${r.status}`);
+    } catch (e) {
+      problems.push(`link ${path} -> ${String(e)}`);
+    }
+  }
+
+  // 3. The hero must render without a canvas, so the poster path is what the
+  //    user actually sees when WebGL is unavailable or disabled.
+  const canvasCount = await page.evaluate(
+    () => document.querySelectorAll("canvas").length,
+  );
+  if (canvasCount !== 0) {
+    problems.push(`home renders ${canvasCount} <canvas>; the hero must not need one`);
+  }
+  const heroText = await page.evaluate(() => {
+    const h1 = document.querySelector("h1.hero-title");
+    return h1 ? h1.textContent ?? "" : "";
+  });
+  if (!heroText.trim()) problems.push("home has no h1.hero-title text");
+
+  // 4. Under reduced motion the page must still be complete and readable:
+  //    no element may be left at opacity 0 waiting for an animation that
+  //    the user has asked not to run.
+  const reduced = await browser.newContext({
+    viewport: { width: 1440, height: 1000 },
+    reducedMotion: "reduce",
+  });
+  const rp = await reduced.newPage();
+  await rp.goto(BASE + "/", { waitUntil: "networkidle", timeout: 60000 });
+  const hidden = await rp.evaluate(() =>
+    [...document.querySelectorAll("main *")]
+      .filter((el) => {
+        const cs = getComputedStyle(el);
+        return parseFloat(cs.opacity) === 0 && el.getBoundingClientRect().height > 0;
+      })
+      .map((el) => `${el.tagName.toLowerCase()}.${String(el.className).slice(0, 24)}`)
+      .slice(0, 5),
+  );
+  if (hidden.length) {
+    problems.push(`reduced motion leaves content invisible: ${hidden.join(", ")}`);
+  }
+  await reduced.close();
+  await ctx.close();
 }
 
 await browser.close();

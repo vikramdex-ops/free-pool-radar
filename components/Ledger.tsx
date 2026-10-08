@@ -186,29 +186,39 @@ export function OfferLedger({
  * reader something, so those are marked and the common case is stated once.
  */
 function Requirements({ offer }: { offer: OfferWithProvider }) {
-  const blockers: string[] = [];
-  if (offer.card_required) blockers.push("card");
-  if (offer.access_requires_subscription) blockers.push("subscription");
-  if (offer.payment_required && !offer.card_required) blockers.push("payment");
+  // Each requirement is its own chip. They used to be one joined phrase
+  // ("No card, no sub") sitting next to a second chip, so the two ran together
+  // as "No card, no subKey required" when the cell was read as text. Discrete
+  // chips are both correct as data and legible to a screen reader.
+  const chips: { label: string; className: string }[] = [];
+
+  chips.push(
+    offer.card_required
+      ? { label: "Card required", className: "chip chip-no" }
+      : { label: "No card", className: "chip chip-yes" },
+  );
+
+  chips.push(
+    offer.access_requires_subscription
+      ? { label: "Subscription required", className: "chip chip-no" }
+      : offer.payment_required
+        ? { label: "Payment required", className: "chip chip-no" }
+        : { label: "No subscription", className: "chip chip-yes" },
+  );
+
+  chips.push(
+    offer.keyless
+      ? { label: "Keyless", className: "chip chip-yes" }
+      : { label: "API key required", className: "chip" },
+  );
 
   return (
     <div className="req">
-      {blockers.length > 0 ? (
-        <span className="chip chip-no">
-          <span className="dot" aria-hidden="true" />
-          {blockers.join(" + ")} required
+      {chips.map((c) => (
+        <span key={c.label} className={c.className}>
+          {c.label}
         </span>
-      ) : (
-        <span className="chip chip-yes">
-          <span className="dot" aria-hidden="true" />
-          No card, no sub
-        </span>
-      )}
-      {offer.keyless ? (
-        <span className="chip chip-yes">Keyless</span>
-      ) : (
-        <span className="chip">Key required</span>
-      )}
+      ))}
     </div>
   );
 }
@@ -277,7 +287,24 @@ function OfferCard({ offer, now }: { offer: OfferWithProvider; now: number }) {
       </dl>
 
       <div className="offer-card-foot">
-        <EvidenceLink href={offer.official_evidence_url} />
+        {/* The internal evidence page is the primary destination everywhere:
+            it carries the verification level, the stored reason and the
+            sweep history. The external source is then offered separately and
+            labelled as leaving this site, so a reader can always tell which
+            link goes where - the card used to offer only the external URL
+            while the table offered only the internal one. */}
+        <EvidenceLink offerId={offer.id} />
+        {offer.official_evidence_url ? (
+          <a
+            href={offer.official_evidence_url}
+            className="link-ev"
+            target="_blank"
+            rel="noopener noreferrer nofollow"
+          >
+            Source <span aria-hidden="true">↗</span>
+            <span className="sr-only">(opens in a new tab)</span>
+          </a>
+        ) : null}
       </div>
     </article>
   );

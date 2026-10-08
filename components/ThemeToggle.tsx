@@ -41,13 +41,21 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
       : isDark
         ? "Switch to light theme"
         : "Switch to dark theme";
+  // The button shows a word as well as a glyph, so the accessible name has to
+  // contain that word. An aria-label describing the action alone leaves the
+  // visible "DARK"/"LIGHT" outside the name (axe: label-content-name-mismatch).
+  // The visible word must stand on its own: axe splits the name on
+  // whitespace, so "…(DARK)" would not count as the word DARK. A dash keeps
+  // it a separate token while reading naturally.
+  const visible = isDark ? "DARK" : "LIGHT";
+  const accessibleLabel = `${label} — ${visible}`;
 
   return (
     <button
       type="button"
       onClick={toggle}
-      aria-label={label}
-      title={label}
+      aria-label={accessibleLabel}
+      title={accessibleLabel}
       aria-pressed={theme === null ? undefined : isDark}
       className={`theme-toggle ${className}`}
     >

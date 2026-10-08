@@ -45,6 +45,7 @@ export function Hero({
     sourcesLive: number;
     sourcesTotal: number;
     withdrawn: number;
+    lastSweep: string | null;
   };
 }) {
   return (
@@ -81,8 +82,11 @@ export function Hero({
               <Link href="/methodology" className="btn">
                 How we verify
               </Link>
-              <Link href="/api/live" className="btn">
-                Public API
+              {/* Raw JSON with no explanation is a hostile first step. This
+                  lands on the developers page, which explains the endpoints and
+                  links to them in context. */}
+              <Link href="/developers" className="btn">
+                Developers &amp; API
               </Link>
             </div>
           </div>
@@ -255,14 +259,15 @@ export function Upcoming({
   );
 
   if (upcoming.length === 0 && upcomingOffers.length === 0) {
+    // A full-height empty block for an empty section makes the page read as
+    // unfinished. One slim strip states the fact and the consequence, and
+    // steps out of the way. It fills with real cards only when real events
+    // exist - it is never padded with placeholders.
     return (
-      <div className="empty">
-        <p className="empty-title">No upcoming events</p>
-        <p>
-          Nothing is scheduled to open right now. The next announced pool will
-          appear here as soon as a source publishes it.
-        </p>
-      </div>
+      <p className="empty-strip">
+        <span className="dot" aria-hidden="true" />
+        No announced pools right now. Checked again at the next sweep.
+      </p>
     );
   }
 

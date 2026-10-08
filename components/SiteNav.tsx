@@ -34,13 +34,16 @@ export function SiteNav() {
           <span className="dot dot-live" aria-hidden="true" />
           FREE POOL RADAR
         </Link>
-        <div className="nav-scroll">
-          <ul
-            className="nav-list"
-            tabIndex={0}
-            role="region"
-            aria-label="Primary destinations"
-          >
+        {/* The landmark lives on the scroll container, not on the list.
+            `role="region"` on a <ul> replaces its list role, which orphans the
+            <li> children and fails axe's `listitem` rule. The list keeps
+            tabIndex so it is still the keyboard-operable scroll target. */}
+        <div
+          className="nav-scroll"
+          role="region"
+          aria-label="Primary destinations"
+        >
+          <ul className="nav-list" tabIndex={0}>
             {items.map((i) => (
               <li key={i.href}>
                 <Link href={i.href} className="nav-link">
