@@ -86,6 +86,16 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
 
+  // Dev-server internal resources (HMR, RSC payloads) are same-origin by
+  // default, so a proxied preview hostname has its live reload blocked. The
+  // allowlist is read from the environment rather than committed, so no
+  // machine-specific hostname enters the repository, and next dev ignores the
+  // option's absence. Production is unaffected: this is a dev-only setting.
+  allowedDevOrigins: (process.env.ALLOWED_DEV_ORIGINS ?? "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean),
+
   // The git repository root is the parent directory, so Turbopack would
   // otherwise treat the parent as the project root and warn about the ignored
   // lockfile. Pinning the root to this directory keeps builds reproducible.
