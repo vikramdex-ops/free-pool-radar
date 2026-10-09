@@ -119,19 +119,25 @@ check("the ledger states the cap in its caption", () => {
   );
 });
 
-// 5. The feeds are capped, and the cap is a real prop rather than an
-//    unbounded render. groupChanges renders one row per group, so an
-//    uncapped feed is as long as the change log.
-check("the change feeds declare a cap", () => {
-  const feeds = page.match(/<ChangeFeed\b[\s\S]*?\/>/g) || [];
-  assert.ok(feeds.length >= 2, "expected the New and Changed feeds to still exist");
-  for (const f of feeds) {
-    assert.match(
-      f,
-      /limit=\{?\d+\}?/,
-      "a ChangeFeed on the home page declares no limit prop",
-    );
-  }
+// 5. The intelligence band is capped. New and Changed are two columns of one
+//    band, and each column is capped at three subjects so an unbounded change
+//    log cannot stretch the landing page.
+check("the intelligence band declares a cap", () => {
+  assert.match(
+    page,
+    /<IntelliFeed\b/,
+    "app/page.tsx no longer renders the New and Changed intelligence band",
+  );
+  assert.match(
+    feed,
+    /\.slice\(0,\s*3\)/,
+    "IntelliFeed must cap both columns at 3 subjects",
+  );
+  assert.match(
+    feed,
+    /<section[^>]*id="intel"/,
+    "IntelliFeed does not render the #intel section",
+  );
 });
 
 // 6. Feed.tsx honours a limit, so the prop above is not decorative.

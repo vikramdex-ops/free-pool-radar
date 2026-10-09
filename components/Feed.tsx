@@ -188,7 +188,7 @@ function collapse(rows: ChangeWithProvider[]): Entry[] {
       c.change_type === "new" ? (c.new_value?.replace(/_/g, " ") ?? "") : null;
 
     const e: Entry = {
-      key: [label, added, c.field, c.old_value, c.new_value].join("|"),
+      key: [label, added, c.field, c.old_value, c.new_value, c.detected_at].join("|"),
       label,
       offerId: hasOffer && c.offer_id ? c.offer_id : null,
       added,
@@ -301,6 +301,92 @@ const readable = (v: string | null) => {
  * still the answer to "does this provider have a free tier", and deleting it
  * would make the site less accurate over time rather than more.
  */
+/**
+ * One intelligence band with two columns: New and Changed.
+ *
+ * The brief wants New and Changed as a single two-column band rather than two
+ * stacked sections, with three subjects shown in each column. This keeps the
+ * "what is new vs what changed" comparison side by side and stops the page
+ * from reading as two near-identical lists.
+ *
+ * Each column is capped at three groups, because uncapped would reproduce
+ * /timeline inside the home page (APR-055). The full timeline stays one link
+ * away.
+ */
+export function IntelliFeed({
+  changes,
+  now,
+}: {
+  changes: ChangeWithProvider[];
+  now: number;
+}) {
+  const newRows = changes.filter((c) => c.change_type === "new");
+  const changedRows = changes.filter(
+    (c) => c.change_type !== "new",
+  );
+
+  const newGroups = groupChanges(newRows).slice(0, 3);
+  const changedGroups = groupChanges(changedRows).slice(0, 3);
+
+  const newHidden = groupChanges(newRows).length - newGroups.length;
+  const changedHidden = groupChanges(changedRows).length - changedGroups.length;
+
+  return (
+    <section id="intel" className="sect intel-band">
+      <div className="sect-head">
+        <h2 className="sect-title">New and changed</h2>
+        <Link href="/timeline" className="link-ev">
+          Full timeline
+          <span aria-hidden="true"> →</span>
+        </Link>
+      </div>
+      <div className="intel-grid">
+        <div className="intel-col">
+          <p className="label" style={{ color: "var(--t-live)" }}>
+            New
+          </p>
+          {newGroups.length === 0 ? (
+            <p className="annot">Nothing new this cycle.</p>
+          ) : (
+            <ol className="feed">
+              {newGroups.map((g) => (
+                <GroupRow key={g.key} group={g} now={now} />
+              ))}
+            </ol>
+          )}
+          {newHidden > 0 ? (
+            <p className="annot" style={{ marginTop: "0.5rem" }}>
+              {newHidden} more new{" "}
+              {newHidden === 1 ? "subject" : "subjects"} on the full timeline.
+            </p>
+          ) : null}
+        </div>
+
+        <div className="intel-col">
+          <p className="label" style={{ color: "var(--t-upcoming)" }}>
+            Changed
+          </p>
+          {changedGroups.length === 0 ? (
+            <p className="annot">No tracked changes since the last sweep.</p>
+          ) : (
+            <ol className="feed">
+              {changedGroups.map((g) => (
+                <GroupRow key={g.key} group={g} now={now} />
+              ))}
+            </ol>
+          )}
+          {changedHidden > 0 ? (
+            <p className="annot" style={{ marginTop: "0.5rem" }}>
+              {changedHidden} more changed{" "}
+              {changedHidden === 1 ? "subject" : "subjects"} on the full timeline.
+            </p>
+          ) : null}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function EndedArchive({
   offers,
   now,

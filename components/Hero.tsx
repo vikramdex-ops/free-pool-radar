@@ -67,10 +67,9 @@ export function Hero({
             </h1>
 
             <p className="hero-lede">
-              Discover free AI inference before everyone else does. We monitor
-              shared pools, free model endpoints, sponsored access, promotional
-              credits and keyless routes &mdash; and we keep the record when
-              they disappear.
+              Discover free pools before they vanish. We monitor shared pools,
+              free model endpoints, sponsored access, promotional credits and
+              keyless routes &mdash; and the record stays when they do.
             </p>
 
             <HeroStats {...stats} />

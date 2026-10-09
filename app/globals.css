@@ -551,6 +551,29 @@ body {
    plus a first-paint window across every rendered row, to animate a fact the
    change feed already prints as text. The declaration had zero consumers. */
 
+
+/* ==================================================================
+   intelligence band (New and Changed, two columns) =========================
+   ================================================================== */
+
+.intel-band .sect-title {
+  letter-spacing: 0.18em;
+}
+
+.intel-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2.5rem;
+}
+@media (min-width: 900px) {
+  .intel-grid { grid-template-columns: 1fr 1fr; }
+}
+
+.intel-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
 /* ==================================================================
    navigation
    ================================================================== */
@@ -651,15 +674,93 @@ body {
 }
 .nav-link:hover { color: var(--t-ink); border-bottom-color: var(--t-info); }
 
+
+/* nav "More" disclosure: GitHub ↗, Ecosystem, Developers.
+   A native <details>, so it opens with no client-side menu state (§42). */
+.nav-overflow {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.nav-more {
+  position: relative;
+  display: inline-flex;
+}
+.nav-overflow-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding-block: 0.5rem;
+  border-bottom: 1px solid transparent;
+  cursor: pointer;
+  list-style: none;
+  transition: color var(--t-dur) ease, border-color var(--t-dur) ease;
+}
+.nav-overflow-btn::-webkit-details-marker { display: none; }
+.nav-overflow-btn::marker { content: ""; }
+.nav-overflow-btn:hover,
+.nav-more[open] .nav-overflow-btn {
+  color: var(--t-ink);
+  border-bottom-color: var(--t-info);
+}
+.nav-chev {
+  width: 0.75rem;
+  height: 0.75rem;
+  color: var(--t-ink-3);
+  transition: transform var(--t-dur) ease, color var(--t-dur) ease;
+}
+.nav-more[open] .nav-chev { transform: rotate(180deg); }
+.nav-overflow-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 9rem;
+  margin-top: 0.25rem;
+  padding: 0.375rem 0;
+  list-style: none;
+  background: var(--t-panel);
+  border: 1px solid var(--t-rule);
+  border-radius: 2px;
+  box-shadow: 0 6px 18px color-mix(in oklab, var(--t-sheet) 12%, transparent);
+  opacity: 0;
+  transform: translateY(-4px);
+  pointer-events: none;
+  transition: opacity var(--t-dur) ease, transform var(--t-dur) ease;
+  z-index: 60;
+}
+.nav-more[open] .nav-overflow-menu {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.nav-overflow-menu .nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding-block: 0.5rem;
+  padding-inline: 0.75rem;
+  border-bottom: 1px solid transparent;
+  width: 100%;
+  color: var(--t-ink-2);
+}
+.nav-overflow-menu .nav-link:hover { color: var(--t-ink); border-bottom-color: var(--t-info); }
+.nav-overflow-menu .nav-link:focus-visible {
+  outline: 2px solid var(--t-info);
+  outline-offset: 1px;
+}
+.nav-right {
+  display: inline-flex;
+  align-items: center;
+  margin-left: auto;
+}
+
+
 /* ==================================================================
    theme toggle
    ================================================================== */
 
 .theme-toggle {
-  position: fixed;
-  right: 1rem;
-  bottom: 1rem;
-  z-index: 50;
+  position: static;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -675,9 +776,8 @@ body {
   letter-spacing: 0.14em;
   /* background-color with the ink (VIS-047).
      min-width holds the control's box while the label swaps between DARK
-     (4 chars) and LIGHT (5 chars) at 0.14em letter-spacing: the right edge is
-     pinned by position:fixed, so without a floor the LEFT edge moves 2.547px
-     on every flip. */
+     (4 chars) and LIGHT (5 chars) at 0.14em letter-spacing: without a floor
+     the box resizes on every flip and shifts the nav's right edge by 2.547px. */
   min-width: 7.25rem;
   justify-content: flex-end;
   transition: color var(--t-dur) ease, border-color var(--t-dur) ease,

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { num, stampUTC } from "@/lib/format";
 
 /**
@@ -53,23 +54,25 @@ export function HeroStats({
       v: num(modelIds),
       l: "Free model ids",
       p: `distinct ids across ${num(modelRows)} model rows on free routes`,
+      href: "/models",
     },
     {
       v: num(cardlessProviders),
       l: "Cardless providers",
       p: `of ${num(liveProviders)} providers with a live route`,
+      href: "/providers",
     },
-    // Both numbers, because "12 of 12" and "12 of 14" mean very different
-    // things and a reader should not need another page to learn which.
     {
       v: `${num(sourcesLive)} / ${num(sourcesTotal)}`,
       l: "Sources responding",
       p: `${num(sourcesTotal - sourcesLive)} impaired at the last sweep`,
+      href: "/methodology",
     },
     {
       v: num(withdrawn),
       l: "Withdrawn offers",
       p: `kept on the record of ${num(liveOffers)} live routes`,
+      href: "/timeline",
     },
   ];
 
@@ -78,7 +81,15 @@ export function HeroStats({
       {stats.map((s) => (
         <div key={s.l} className="hero-stat">
           <dt className="label">{s.l}</dt>
-          <dd className="mono">{s.v}</dd>
+          <dd className="mono">
+            {s.href ? (
+              <Link href={s.href} className="link">
+                {s.v}
+              </Link>
+            ) : (
+              s.v
+            )}
+          </dd>
           {/* The population sentence. Rendered from the same values as the
               number above it, so it cannot become a stale caption. */}
           <dd className="annot hero-stat-pop">{s.p}</dd>

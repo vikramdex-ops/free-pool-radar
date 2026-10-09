@@ -4,7 +4,6 @@ import { themeInitScript } from "@/lib/theme";
 import { SITE_URL } from "@/lib/site";
 import { JsonLd, websiteSchema } from "@/components/JsonLd";
 import { SiteNav } from "@/components/SiteNav";
-import { ThemeToggle } from "@/components/ThemeToggle";
 
 const SITE_DESCRIPTION =
   "Live tracker of free AI inference pools: quotas, card rules, verification times, official sources and withdrawn history.";
@@ -94,7 +93,6 @@ export default function RootLayout({
         </a>
         <SiteNav />
         {children}
-        <ThemeToggle />
       </body>
     </html>
   );

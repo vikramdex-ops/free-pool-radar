@@ -9,7 +9,7 @@
 
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ChangeFeed, EndedArchive, SourceHealthPanel } from "@/components/Feed";
+import { ChangeFeed, EndedArchive, IntelliFeed, SourceHealthPanel } from "@/components/Feed";
 import { Hero, Upcoming } from "@/components/Hero";
 import { REPO_URL } from "@/components/JsonLd";
 import { LivePreview } from "@/components/LivePreview";
@@ -190,45 +190,7 @@ export default async function Page() {
           {changesError ? (
             <ReadError what="Recent changes" />
           ) : (
-            <>
-              <ChangeFeed
-                id="new"
-                title="New"
-                changes={changes}
-                now={now}
-                kinds={["new"]}
-                limit={5}
-                emptyTitle="Nothing new this cycle"
-                emptyBody="The last sweep found no offers that were not already on record. New discoveries appear here the moment a monitored source publishes one."
-              />
-
-              <ChangeFeed
-                id="changed"
-                title="Changed"
-                changes={changes}
-                now={now}
-                kinds={[
-                  "model_added",
-                  "model_removed",
-                  "quota_increased",
-                  "quota_decreased",
-                  "card_required",
-                  "card_removed",
-                  "subscription_required",
-                  "subscription_removed",
-                  "rate_limit_changed",
-                  "price_changed",
-                  "status_changed",
-                  "pool_started",
-                  "pool_exhausted",
-                  "pool_extended",
-                  "pool_cancelled",
-                ]}
-                limit={5}
-                emptyTitle="No tracked changes"
-                emptyBody="Nothing we track has changed since the last sweep. A quota move, a new card requirement or a rate-limit change appears here with both values."
-              />
-            </>
+            <IntelliFeed changes={changes} now={now} />
           )}
 
           {endedError ? (
@@ -277,21 +239,25 @@ function SiteFooter() {
             </ul>
           </div>
           <div>
-            <p className="label">Open source</p>
+            <p className="label">Developers</p>
             <ul className="foot-links">
+              <li><Link href="/developers">Developers &amp; API</Link></li>
+              <li><Link href="/data/latest.json">Dataset JSON</Link></li>
+              <li><Link href="/data/latest.csv">Dataset CSV</Link></li>
+              <li><Link href="/feed.xml">Atom feed</Link></li>
               <li>
                 <a href={REPO_URL} rel="noopener noreferrer" target="_blank">
-                  GitHub repository
+                  GitHub repository <span aria-hidden="true">↗</span>
                 </a>
               </li>
               <li>
-                <a href={`${REPO_URL}/blob/main/DATA-LICENSE`} rel="noopener noreferrer" target="_blank">
-                  Data licence (CC0)
+                <a href={`${REPO_URL}/blob/main/ECOSYSTEM.md`} rel="noopener noreferrer" target="_blank">
+                  Ecosystem <span aria-hidden="true">↗</span>
                 </a>
               </li>
               <li>
-                <a href={`${REPO_URL}/blob/main/PRODUCT.md`} rel="noopener noreferrer" target="_blank">
-                  Full specification
+                <a href={`${REPO_URL}/blob/main/MCP.md`} rel="noopener noreferrer" target="_blank">
+                  MCP server <span aria-hidden="true">↗</span>
                 </a>
               </li>
             </ul>

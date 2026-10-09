@@ -15,6 +15,10 @@ import Link from "next/link";
  *  because that is where the §31 filter and §32 sort controls live. The
  *  landing page's own sections — starting soon, new, changed, ended — are one
  *  scroll away and are linked from within it, so they do not need a slot here. */
+import { ThemeToggle } from "./ThemeToggle";
+import { REPO_URL } from "./JsonLd";
+
+
 export function SiteNav() {
   const items = [
     { href: "/live", label: "Live" },
@@ -51,9 +55,45 @@ export function SiteNav() {
                 </Link>
               </li>
             ))}
+            <li className="nav-overflow">
+              {/* The disclosure is a native <details>, not a client-side menu:
+                  the project renders no client menu state (§42) and this keeps
+                  the control keyboard-operable with no JavaScript. */}
+              <details className="nav-more">
+                <summary className="nav-link nav-overflow-btn">
+                  More
+                  <svg viewBox="0 0 16 16" className="nav-chev" aria-hidden="true">
+                    <path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </summary>
+                <ul id="nav-overflow-menu" className="nav-overflow-menu">
+                  <li>
+                    <a
+                      href={REPO_URL}
+                      className="nav-link"
+                      target="_blank"
+                      rel="noopener noreferrer nofollow"
+                    >
+                      GitHub <span aria-hidden="true">↗</span>
+                    </a>
+                  </li>
+                  <li>
+                    <Link href="/ecosystem" className="nav-link">Ecosystem</Link>
+                  </li>
+                  <li>
+                    <Link href="/developers" className="nav-link">Developers</Link>
+                  </li>
+                </ul>
+              </details>
+            </li>
           </ul>
+        </div>
+        <div className="nav-right">
+          <ThemeToggle />
         </div>
       </div>
     </nav>
   );
 }
+
+
