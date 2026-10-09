@@ -1,5 +1,9 @@
 import { chromium } from "playwright";
 
+// The hero instrument is a canvas now, so there are no per-contact DOM nodes
+// to hover: hit-testing lives inside the component. This drives the real
+// pointer across the stage and reads the readout that appears when a contact
+// is under it, which is the behaviour a reader actually gets.
 const BASE = process.env.BASE ?? "http://localhost:3133";
 const b = await chromium.launch();
 const ctx = await b.newContext({
@@ -13,44 +17,53 @@ await ctx.addInitScript(
 const p = await ctx.newPage();
 await p.goto(BASE + "/", { waitUntil: "networkidle" });
 
-const svg = await p.$(".radar-svg");
-const box = await svg.boundingBox();
+const canvas = await p.$(".radar-canvas");
+if (!canvas) {
+  console.error("FAIL: no .radar-canvas on the landing page");
+  process.exit(1);
+}
+const box = await canvas.boundingBox();
+const label = await canvas.getAttribute("aria-label");
+console.log(`canvas stage: ${Math.round(box.width)}x${Math.round(box.height)}`);
+console.log(`aria-label: ${label}`);
 
-// Hover a contact. The hit areas are deliberately larger than the dots, so
-// this targets what a reader's cursor would actually land on.
-const hits = await p.$$(".radar-hit");
-console.log(`contacts with a hit area: ${hits.length}`);
+// The canvas must have real pixels, not just dimensions.
+const painted = await canvas.evaluate((el) => {
+  const ctx = el.getContext("2d");
+  const { data } = ctx.getImageData(0, 0, el.width, el.height);
+  let lit = 0;
+  for (let i = 3; i < data.length; i += 4) if (data[i] > 8) lit++;
+  return lit;
+});
+console.log(`lit pixels: ${painted}`);
+if (painted === 0) {
+  console.error("FAIL: the canvas is blank");
+  process.exit(1);
+}
 
+// Sweep a grid of pointer positions: a reader probes, and the readout should
+// appear when a contact lands under the cursor.
 let hovered = null;
-for (const h of hits) {
-  const hb = await h.boundingBox();
-  if (!hb) continue;
-  await p.mouse.move(hb.x + hb.width / 2, hb.y + hb.height / 2);
-  await p.waitForTimeout(320);
-  const readout = await p.$(".radar-readout");
-  if (readout) {
-    hovered = (await readout.textContent())?.replace(/\s+/g, " ").trim();
-    break;
+outer: for (let gy = 0.18; gy < 0.9; gy += 0.06) {
+  for (let gx = 0.12; gx < 0.92; gx += 0.05) {
+    await p.mouse.move(box.x + box.width * gx, box.y + box.height * gy);
+    await p.waitForTimeout(45);
+    const readout = await p.$(".radar-readout");
+    if (readout) {
+      hovered = (await readout.textContent())?.replace(/\s+/g, " ").trim();
+      break outer;
+    }
   }
 }
 console.log(`hover readout: ${hovered ?? "none"}`);
+if (!hovered) {
+  console.error("FAIL: sweeping the pointer found no contact readout");
+  process.exit(1);
+}
 
-// Pointer lean: the sweep group should carry a rotation once the pointer moves.
-await p.mouse.move(box.x + box.width * 0.8, box.y + box.height * 0.3, { steps: 8 });
-await p.waitForTimeout(400);
-const lean = await p.$eval(".radar-lean", (el) => el.style.transform);
-console.log(`sweep lean transform: ${lean}`);
-
-const arcs = await p.$$eval(".radar-arc", (els) =>
-  els.map((e) => ({
-    len: Math.round(e.getTotalLength()),
-    stroke: getComputedStyle(e).strokeWidth,
-  })),
-);
-console.log(`upcoming arcs on the rim: ${arcs.length}`, JSON.stringify(arcs));
-
-await p.screenshot({ path: ".review/radar-hover.png", clip: {
-  x: box.x - 8, y: box.y - 8, width: box.width + 16, height: box.height + 90,
-} });
+await p.screenshot({
+  path: ".review/radar-hover.png",
+  clip: { x: box.x - 8, y: box.y - 8, width: box.width + 16, height: box.height + 90 },
+});
 console.log(".review/radar-hover.png");
 await b.close();

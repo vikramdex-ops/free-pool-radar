@@ -15,6 +15,7 @@ import { REPO_URL } from "@/components/JsonLd";
 import { LivePreview } from "@/components/LivePreview";
 
 import { ReadError } from "@/components/ui";
+import { stampUTC } from "@/lib/format";
 import { Methodology } from "@/components/Methodology";
 import {
   getChanges,
@@ -111,10 +112,11 @@ export default async function Page() {
           <header className="page-head">
             <p className="label">Overview</p>
             <p className="page-lede">
-              What is free right now, what is starting, what changed, and what
-              was withdrawn - each with the source it came from and the time it
-              was last confirmed. The complete set, with filters, is one link
-              away. Nothing here is scored or ranked.
+              Four views of one dataset: free right now, announced for later,
+              changed since the last sweep, and withdrawn for good. Every figure
+              carries the URL it was read from and the time it was last
+              confirmed. The complete set, with filters, is one link away
+              &mdash; nothing here is scored or ranked.
             </p>
           </header>
 
@@ -203,24 +205,77 @@ export default async function Page() {
         </div>
       </main>
 
-      <SiteFooter />
+      <SiteFooter
+        lastSweep={status?.last_sweep_at ?? null}
+        nextSweep={status?.next_sweep_at ?? null}
+        sourcesOk={sourcesOk}
+        sourcesTotal={sourcesTotal}
+      />
     </>
   );
 }
 
-function SiteFooter() {
+function SiteFooter({
+  lastSweep,
+  nextSweep,
+  sourcesOk,
+  sourcesTotal,
+}: {
+  lastSweep: string | null;
+  nextSweep: string | null;
+  sourcesOk: number;
+  sourcesTotal: number;
+}) {
   return (
     <footer className="foot">
       <div className="wrap">
+        {/* A footer for a live instrument should still read as live. The sweep
+            line is the last fact on the page, and it is a fact: it states when
+            the figures above were confirmed, and when they are confirmed
+            again. It closes the page on evidence rather than on links. */}
+        <div className="foot-close">
+          <p className="foot-statement">
+            Free inference is temporary.
+            <br />
+            <span className="foot-statement-accent">The record is not.</span>
+          </p>
+          <dl className="foot-sweep">
+            <div>
+              <dt className="label">Last sweep</dt>
+              <dd className="mono">
+                {lastSweep ? stampUTC(lastSweep) : "Not yet swept"}
+              </dd>
+            </div>
+            <div>
+              <dt className="label">Next sweep</dt>
+              <dd className="mono">
+                {nextSweep ? stampUTC(nextSweep) : "Not scheduled"}
+              </dd>
+            </div>
+            <div>
+              <dt className="label">Sources answering</dt>
+              <dd className="mono">
+                {sourcesOk} / {sourcesTotal}
+              </dd>
+            </div>
+          </dl>
+        </div>
+
         <div className="foot-grid">
           <div>
             <p className="foot-brand">FREE POOL RADAR</p>
-            <p className="annot" style={{ maxWidth: "34ch" }}>
-              The live intelligence layer for $0 AI inference.
+            <p className="annot foot-mission">
+              An open-source record of free AI inference: every pool, every
+              change and every withdrawal, each with the URL it was read from.
+            </p>
+            <p className="annot foot-mission">
+              No account, no key, no card — and nothing here is scored or
+              ranked.
             </p>
           </div>
+
           <div>
-            <p className="label">Product</p>
+            <p className="label">The record</p>
             <ul className="foot-links">
               <li><Link href="/timeline">Timeline</Link></li>
               <li><Link href="/providers">Providers</Link></li>
@@ -229,30 +284,24 @@ function SiteFooter() {
               <li><Link href="/methodology">Methodology</Link></li>
             </ul>
           </div>
+
           <div>
-            <p className="label">API</p>
-            <ul className="foot-links">
-              <li><Link href="/api/live">/api/live</Link></li>
-              <li><Link href="/api/providers">/api/providers</Link></li>
-              <li><Link href="/api/models">/api/models</Link></li>
-              <li><Link href="/api/changes">/api/changes</Link></li>
-            </ul>
-          </div>
-          <div>
-            <p className="label">Developers</p>
+            <p className="label">Take the data</p>
             <ul className="foot-links">
               <li><Link href="/developers">Developers &amp; API</Link></li>
+              <li><Link href="/api/live">GET /api/live</Link></li>
               <li><Link href="/data/latest.json">Dataset JSON</Link></li>
               <li><Link href="/data/latest.csv">Dataset CSV</Link></li>
               <li><Link href="/feed.xml">Atom feed</Link></li>
+            </ul>
+          </div>
+
+          <div>
+            <p className="label">In the open</p>
+            <ul className="foot-links">
               <li>
                 <a href={REPO_URL} rel="noopener noreferrer" target="_blank">
                   GitHub repository <span aria-hidden="true">↗</span>
-                </a>
-              </li>
-              <li>
-                <a href={`${REPO_URL}/blob/main/ECOSYSTEM.md`} rel="noopener noreferrer" target="_blank">
-                  Ecosystem <span aria-hidden="true">↗</span>
                 </a>
               </li>
               <li>
@@ -260,25 +309,33 @@ function SiteFooter() {
                   MCP server <span aria-hidden="true">↗</span>
                 </a>
               </li>
+              <li>
+                <a href={`${REPO_URL}/blob/main/ECOSYSTEM.md`} rel="noopener noreferrer" target="_blank">
+                  Ecosystem <span aria-hidden="true">↗</span>
+                </a>
+              </li>
             </ul>
           </div>
         </div>
 
-        <div className="hairline" style={{ marginTop: "2.5rem", paddingTop: "1.5rem" }}>
+        <div className="foot-legal">
           <p className="annot">
             Free access can be withdrawn, rate-limited, modified or exhausted
             without notice. Always review the provider&rsquo;s current terms,
             privacy policy and usage restrictions before sending sensitive or
             production data.
           </p>
-          <p className="annot" style={{ marginTop: "0.75rem" }}>
+          <p className="annot">
             Free Pool Radar is an independent information service and is not
             affiliated with the providers listed. All timestamps are UTC.
           </p>
-          <p className="annot" style={{ marginTop: "0.75rem" }}>
+          <p className="annot">
             The code is MIT licensed and the collected dataset is released
-            under CC0 1.0 Universal &mdash; take it, check it, and build on it.
-            See the{" "}
+            under{" "}
+            <a href={`${REPO_URL}/blob/main/DATA-LICENSE`} rel="noopener noreferrer" target="_blank">
+              CC0 1.0 Universal
+            </a>{" "}
+            &mdash; take it, check it, and build on it. See the{" "}
             <a href={REPO_URL} rel="noopener noreferrer" target="_blank">
               source repository
             </a>{" "}
@@ -289,3 +346,4 @@ function SiteFooter() {
     </footer>
   );
 }
+

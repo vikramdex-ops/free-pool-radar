@@ -63,14 +63,26 @@ export function LivePreview({
 
   const groups = groupByProvider(offers);
 
-  // Two caps: a provider count and a route budget. Both are stated in the
-  // caption below, because a cap the reader cannot see is not a population.
+  // Two caps: a provider count and a route budget, and the budget is SPREAD
+  // rather than spent on whoever sorts first. The first provider sorts
+  // alphabetically, and one provider can publish twenty-four routes, so a
+  // budget spent in order filled the whole preview with a single column and
+  // pushed every other provider off the page. Dividing the budget by the
+  // provider count keeps the preview a preview: several providers, a few
+  // routes each, and the total stated underneath.
+  //
+  // Both caps are stated in the caption below, because a cap the reader cannot
+  // see is not a population.
+  const perProvider = Math.max(
+    1,
+    Math.floor(maxRoutes / Math.max(1, limit)),
+  );
   const shown: typeof groups = [];
   let routesLeft = maxRoutes;
   const shownRoutes: number[] = [];
   for (const g of groups.slice(0, limit)) {
     if (routesLeft <= 0) break;
-    const slice = g.offers.slice(0, routesLeft);
+    const slice = g.offers.slice(0, Math.min(perProvider, routesLeft));
     shown.push({ ...g, offers: slice });
     routesLeft -= slice.length;
     shownRoutes.push(...slice.map((o) => o.id));
@@ -136,9 +148,10 @@ export function LivePreview({
         {/* The sort order is part of the claim: a reader must not mistake an
             alphabetical list for an implied ranking (§4). */}
         <p className="annot">
-          Showing {routesShown} of {offers.length} live routes across{" "}
-          {shown.length} of {groups.length} providers. Providers A&ndash;Z,
-          then route name, then id &mdash; not ranked.
+          Showing {routesShown} of {num(offers.length)} live routes across{" "}
+          {shown.length} of {num(groups.length)} providers, up to {perProvider}{" "}
+          route{perProvider === 1 ? "" : "s"} each. Providers A&ndash;Z, then
+          route name, then id &mdash; not ranked.
         </p>
         <Link href="/live" className="btn">
           All {offers.length} routes

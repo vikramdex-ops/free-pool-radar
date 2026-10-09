@@ -58,25 +58,28 @@ export function Hero({
               Live intelligence for $0 AI inference
             </p>
 
+            {/* The product's one true claim is about permanence, not about
+                being first. Free inference is by definition temporary, so the
+                thing worth having is the record of it — which is also the only
+                thing this site keeps after a pool closes. */}
             <h1 className="hero-title">
-              Every free AI inference pool.
+              Free inference runs out.
               <br />
-              Every disappearing quota.
-              <br />
-              <span className="hero-title-accent">One live radar.</span>
+              <span className="hero-title-accent">We keep the record.</span>
             </h1>
 
             <p className="hero-lede">
-              Discover free pools before they vanish. We monitor shared pools,
-              free model endpoints, sponsored access, promotional credits and
-              keyless routes &mdash; and the record stays when they do.
+              Shared pools, free model endpoints, sponsored credits,
+              promotional credits and keyless routes &mdash; each read from the
+              source that published it, stamped with the moment it was last
+              confirmed, and kept long after it closes.
             </p>
 
             <HeroStats {...stats} />
 
             <div className="hero-actions">
               <Link href="#live" className="btn">
-                What&rsquo;s free now
+                What&rsquo;s free right now
               </Link>
               <Link href="/methodology" className="btn">
                 How we verify
