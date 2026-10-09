@@ -157,9 +157,13 @@ export function ChangeFeed({
  * because groupChanges groups by provider, type and moment - and then each row
  * was rendered as its own subject, so the same value change appeared twice.
  *
- * Deduplication is by the tuple a reader would see: subject, field, old, new.
- * Nothing is dropped that a reader could tell apart, and no stored row is
- * altered - this is a rendering rule, not a rewrite of history.
+ * Deduplication is by the difference a reader sees - field, old, new - not by
+ * the subject name. Only one of the two rows carries an offer, so only one of
+ * them has a subject to name: keying on the subject kept both, which is how
+ * the same change printed twice. Distinct offers that moved the same field to
+ * the same values stay distinct, because an offer row is keyed by its own
+ * offer id. Nothing is dropped that a reader could tell apart, and no stored
+ * row is altered - this is a rendering rule, not a rewrite of history.
  *
  * The field label is only repeated in the detail when the subject is an offer
  * name. When there is no offer the subject *is* the field, so repeating it
@@ -176,9 +180,29 @@ interface Entry {
 }
 
 function collapse(rows: ChangeWithProvider[]): Entry[] {
+  // The difference a reader can see, independent of which row carries it.
+  const difference = (c: ChangeWithProvider) =>
+    [c.field ?? "", c.old_value ?? "", c.new_value ?? ""].join("|");
+
+  // Every difference that an offer-bearing row already states. The event row
+  // for the same difference adds no fact, only a second rendering of it.
+  const statedByOffer = new Set<string>();
+  for (const c of rows) {
+    if (c.offer) statedByOffer.add(difference(c));
+  }
+
   const seen = new Map<string, Entry>();
+  const order: string[] = [];
+
   for (const c of rows) {
     const hasOffer = Boolean(c.offer);
+    const diff = difference(c);
+
+    // The event half of a difference an offer row already states.
+    if (!hasOffer && statedByOffer.has(diff)) continue;
+    // A row with nothing to say renders an empty subject line.
+    if (!hasOffer && !c.field && c.new_value === null) continue;
+
     const field = c.field ? (FIELD_LABEL[c.field] ?? c.field) : null;
     const label = hasOffer
       ? (c.offer?.model_label ?? "")
@@ -188,7 +212,7 @@ function collapse(rows: ChangeWithProvider[]): Entry[] {
       c.change_type === "new" ? (c.new_value?.replace(/_/g, " ") ?? "") : null;
 
     const e: Entry = {
-      key: [label, added, c.field, c.old_value, c.new_value, c.detected_at].join("|"),
+      key: `${hasOffer ? `offer:${c.offer_id}` : "event"}|${diff}`,
       label,
       offerId: hasOffer && c.offer_id ? c.offer_id : null,
       added,
@@ -196,9 +220,12 @@ function collapse(rows: ChangeWithProvider[]): Entry[] {
       oldValue: c.field ? readable(c.old_value) : null,
       newValue: c.field ? readable(c.new_value) : null,
     };
-    if (e.key !== "|||" && !seen.has(e.key)) seen.set(e.key, e);
+    if (!seen.has(e.key)) {
+      seen.set(e.key, e);
+      order.push(e.key);
+    }
   }
-  return [...seen.values()];
+  return order.map((k) => seen.get(k)!);
 }
 
 function GroupRow({ group, now }: { group: Group; now: number }) {

@@ -154,6 +154,28 @@ check("ChangeFeed accepts and applies a limit", () => {
   );
 });
 
+// 6b. One observed difference is stored twice - against the offer and against
+//     the event - so the same "pool remaining: 25 -> 22" arrived as two rows
+//     and both rendered. Deduplication therefore has to key on the difference
+//     (field, old, new) and drop the anonymous event half, because only the
+//     offer row names a subject. Keying on the subject kept both.
+check("the feed collapses the offer and event halves of one difference", () => {
+  assert.ok(
+    !/\[label,\s*added,\s*c\.field,\s*c\.old_value,\s*c\.new_value/.test(feed),
+    "the duplicate key is built from the subject label again, which keeps both halves of one difference",
+  );
+  assert.match(
+    feed,
+    /statedByOffer/,
+    "collapse() no longer records which differences an offer row already states",
+  );
+  assert.match(
+    feed,
+    /!hasOffer && statedByOffer\.has\(diff\)/,
+    "collapse() no longer drops the event half of a difference an offer row states",
+  );
+});
+
 // 7. The full timeline link survives the cap. Capping without a way through
 //    removes content rather than duplication, which is the line the approval
 //    draws.
