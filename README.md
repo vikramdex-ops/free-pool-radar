@@ -31,7 +31,7 @@ historical change tracking.
 
 | 🟢 Free routes | 🏢 Providers | 🤖 Models | 🔎 Sources | 🕐 Cycle | ✅ Last verified |
 |---:|---:|---:|---:|---:|---|
-| **153** | **39** | **133** | **12** | every 5h | 2026-10-08 07:07 UTC |
+| **156** | **39** | **136** | **12** | every 5h | 2026-10-09 03:07 UTC |
 
 <!-- STATS:END -->
 
