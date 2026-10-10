@@ -115,8 +115,8 @@ export default async function Page() {
               Four views of one dataset: free right now, announced for later,
               changed since the last sweep, and withdrawn for good. Every figure
               carries the URL it was read from and the time it was last
-              confirmed. The complete set, with filters, is one link away
-              &mdash; nothing here is scored or ranked.
+              confirmed. The complete set, with filters, is one link away.
+              Nothing here is scored or ranked.
             </p>
           </header>
 

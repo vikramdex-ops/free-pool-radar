@@ -1,53 +1,83 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="620" viewBox="0 0 1000 620" role="img" aria-label="Free Pool Radar homepage: 153 free routes, 39 providers, 133 models, and a live status table">
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="620" viewBox="0 0 1000 620" role="img" aria-label="Free Pool Radar homepage: headline, four live figures, and a radar instrument panel">
   <rect width="1000" height="620" rx="14" fill="#06080c"/>
   <rect x="0.5" y="0.5" width="999" height="619" rx="14" fill="none" stroke="#1c2634"/>
   <!-- nav -->
   <circle cx="40" cy="34" r="5" fill="#3ddc84"/>
   <text x="54" y="39" font-family="Archivo, system-ui, sans-serif" font-size="15" font-weight="700" letter-spacing="1.5" fill="#e9eef6">FREE POOL RADAR</text>
-  <text x="960" y="39" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="12" fill="#8595aa">LIVE · 2026-10-08 07:07 UTC</text>
+  <text x="960" y="39" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="12" fill="#8595aa">LIVE · sweeping every 5h</text>
   <line x1="0" y1="58" x2="1000" y2="58" stroke="#1c2634"/>
   <!-- headline -->
-  <text x="40" y="118" font-family="Archivo, system-ui, sans-serif" font-size="34" font-weight="700" fill="#e9eef6">Every free AI inference pool.</text>
-  <text x="40" y="158" font-family="Archivo, system-ui, sans-serif" font-size="34" font-weight="700" fill="#e9eef6">Every disappearing quota.</text>
-  <text x="40" y="198" font-family="Archivo, system-ui, sans-serif" font-size="34" font-weight="700" fill="#3ddc84">One live radar.</text>
+  <text x="40" y="118" font-family="Archivo, system-ui, sans-serif" font-size="34" font-weight="700" fill="#e9eef6">Free inference runs out.</text>
+  <text x="40" y="158" font-family="Archivo, system-ui, sans-serif" font-size="34" font-weight="700" fill="#3ddc84">We keep the record.</text>
   <!-- stat strip -->
   <g font-family="JetBrains Mono, monospace">
-    <rect x="40" y="230" width="212" height="96" rx="10" fill="#0c1017" stroke="#1c2634"/>
-    <text x="60" y="266" font-size="34" font-weight="600" fill="#3ddc84">153</text>
-    <text x="60" y="300" font-size="12" fill="#8595aa">FREE ROUTES</text>
-    <rect x="268" y="230" width="212" height="96" rx="10" fill="#0c1017" stroke="#1c2634"/>
-    <text x="288" y="266" font-size="34" font-weight="600" fill="#e9eef6">39</text>
-    <text x="288" y="300" font-size="12" fill="#8595aa">PROVIDERS</text>
-    <rect x="496" y="230" width="212" height="96" rx="10" fill="#0c1017" stroke="#1c2634"/>
-    <text x="516" y="266" font-size="34" font-weight="600" fill="#e9eef6">133</text>
-    <text x="516" y="300" font-size="12" fill="#8595aa">MODELS</text>
-    <rect x="724" y="230" width="236" height="96" rx="10" fill="#0c1017" stroke="#1c2634"/>
-    <text x="744" y="266" font-size="34" font-weight="600" fill="#74b4ff">12</text>
-    <text x="744" y="300" font-size="12" fill="#8595aa">SOURCES VERIFIED</text>
+    <rect x="40" y="200" width="212" height="104" rx="10" fill="#0c1017" stroke="#1c2634"/>
+    <text x="60" y="238" font-size="11" fill="#8595aa" letter-spacing="1.5">FREE MODEL IDS</text>
+    <text x="60" y="272" font-size="34" font-weight="600" fill="#e9eef6">156</text>
+    <text x="60" y="296" font-size="11" fill="#556373">of 39 providers</text>
+
+    <rect x="268" y="200" width="212" height="104" rx="10" fill="#0c1017" stroke="#1c2634"/>
+    <text x="288" y="238" font-size="11" fill="#8595aa" letter-spacing="1.5">CARDLESS PROVIDERS</text>
+    <text x="288" y="272" font-size="34" font-weight="600" fill="#e9eef6">39</text>
+    <text x="288" y="296" font-size="11" fill="#556373">with a live route</text>
+
+    <rect x="496" y="200" width="212" height="104" rx="10" fill="#0c1017" stroke="#1c2634"/>
+    <text x="516" y="238" font-size="11" fill="#8595aa" letter-spacing="1.5">MODELS LISTED</text>
+    <text x="516" y="272" font-size="34" font-weight="600" fill="#e9eef6">136</text>
+    <text x="516" y="296" font-size="11" fill="#556373">on free routes</text>
+
+    <rect x="724" y="200" width="236" height="104" rx="10" fill="#0c1017" stroke="#1c2634"/>
+    <text x="744" y="238" font-size="11" fill="#8595aa" letter-spacing="1.5">SOURCES ANSWERING</text>
+    <text x="744" y="272" font-size="34" font-weight="600" fill="#3ddc84">11 / 12</text>
+    <text x="744" y="296" font-size="11" fill="#556373">at last sweep</text>
   </g>
-  <!-- table -->
-  <rect x="40" y="356" width="920" height="224" rx="10" fill="#0c1017" stroke="#1c2634"/>
-  <text x="60" y="386" font-family="JetBrains Mono, monospace" font-size="12" font-weight="600" letter-spacing="1" fill="#a2b2c6">PROVIDER</text>
-  <text x="330" y="386" font-family="JetBrains Mono, monospace" font-size="12" font-weight="600" letter-spacing="1" fill="#a2b2c6">MODEL</text>
-  <text x="700" y="386" font-family="JetBrains Mono, monospace" font-size="12" font-weight="600" letter-spacing="1" fill="#a2b2c6">ACCESS</text>
-  <text x="900" y="386" font-family="JetBrains Mono, monospace" font-size="12" font-weight="600" letter-spacing="1" fill="#a2b2c6">VERIFIED</text>
-  <line x1="60" y1="398" x2="940" y2="398" stroke="#1c2634"/>
-  <g font-family="JetBrains Mono, monospace" font-size="14" fill="#e9eef6">
-    <circle cx="66" cy="430" r="4" fill="#3ddc84"/>
-    <text x="80" y="435">APMix</text><text x="330" y="435" fill="#a2b2c6">gpt-luna-free</text>
-    <text x="700" y="435" fill="#74b4ff">shared_pool</text><text x="900" y="435" fill="#8595aa">2h ago</text>
+  <!-- radar instrument (schematic, not data) -->
+  <rect x="40" y="340" width="430" height="250" rx="10" fill="#0c1017" stroke="#1c2634"/>
+  <text x="56" y="370" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600" letter-spacing="1.5" fill="#a2b2c6">RADAR · LIVE</text>
+  <circle cx="255" cy="465" r="110" fill="none" stroke="#1c2634"/>
+  <circle cx="255" cy="465" r="74" fill="none" stroke="#1c2634" stroke-dasharray="2 7"/>
+  <circle cx="255" cy="465" r="38" fill="none" stroke="#1c2634" stroke-dasharray="2 7"/>
+  <!-- a live contact, raised -->
+  <circle cx="255" cy="408" r="4.5" fill="#3ddc84"/>
+  <line x1="255" y1="408" x2="255" y2="465" stroke="#3ddc84" stroke-opacity="0.35" stroke-width="1"/>
+  <!-- an upcoming arc on the rim -->
+  <path d="M 320 465 A 110 74 0 0 1 255 391" fill="none" stroke="#f2b134" stroke-opacity="0.9" stroke-width="2"/>
+  <!-- label -->
+  <text x="255" y="590" text-anchor="middle" font-family="Archivo Narrow, sans-serif" font-size="11" fill="#556373">Each dot is one provider · each ring is a pool scale · brightness is recency</text>
 
-    <circle cx="66" cy="468" r="4" fill="#3ddc84"/>
-    <text x="80" y="473">Groq</text><text x="330" y="473" fill="#a2b2c6">llama-3.x</text>
-    <text x="700" y="473" fill="#74b4ff">free_tier</text><text x="900" y="473" fill="#8595aa">1h ago</text>
+  <!-- live routes table (schematic) -->
+  <rect x="490" y="340" width="470" height="250" rx="10" fill="#0c1017" stroke="#1c2634"/>
+  <text x="506" y="370" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600" letter-spacing="1.5" fill="#a2b2c6">LIVE NOW · 6 OF 39 PROVIDERS</text>
+  <line x1="506" y1="382" x2="944" y2="382" stroke="#1c2634"/>
+  <g font-family="JetBrains Mono, monospace" font-size="12">
+    <text x="506" y="404" fill="#a2b2c6">PROVIDER</text>
+    <text x="690" y="404" fill="#a2b2c6">MODEL</text>
+    <text x="820" y="404" fill="#a2b2c6">ACCESS</text>
+    <text x="900" y="404" fill="#a2b2c6">VERIFIED</text>
 
-    <circle cx="66" cy="506" r="4" fill="#f2b134"/>
-    <text x="80" y="511">OpenRouter</text><text x="330" y="511" fill="#a2b2c6">rotating :free</text>
-    <text x="700" y="511" fill="#f2b134">changed</text><text x="900" y="511" fill="#8595aa">now</text>
+    <circle cx="520" cy="430" r="4" fill="#3ddc84"/>
+    <text x="534" y="434" fill="#e9eef6">Cloudflare</text>
+    <text x="690" y="434" fill="#a2b2c6">workers-ai</text>
+    <text x="820" y="434" fill="#74b4ff">free_tier</text>
+    <text x="900" y="434" fill="#8595aa">1h ago</text>
 
-    <circle cx="66" cy="544" r="4" fill="#ff7070"/>
-    <text x="80" y="549">Chutes</text><text x="330" y="549" fill="#a2b2c6">free tier</text>
-    <text x="700" y="549" fill="#ff7070">ended</text><text x="900" y="549" fill="#8595aa">retained</text>
+    <circle cx="520" cy="460" r="4" fill="#3ddc84"/>
+    <text x="534" y="464" fill="#e9eef6">Groq</text>
+    <text x="690" y="464" fill="#a2b2c6">llama-4.scout</text>
+    <text x="820" y="464" fill="#74b4ff">shared_pool</text>
+    <text x="900" y="464" fill="#8595aa">2h ago</text>
+
+    <circle cx="520" cy="490" r="4" fill="#f2b134"/>
+    <text x="534" y="494" fill="#e9eef6">OpenRouter</text>
+    <text x="690" y="494" fill="#a2b2c6">rotating :free</text>
+    <text x="820" y="494" fill="#f2b134">changed</text>
+    <text x="900" y="494" fill="#8595aa">now</text>
+
+    <circle cx="520" cy="520" r="4" fill="#ff7070"/>
+    <text x="534" y="524" fill="#e9eef6">Chutes</text>
+    <text x="690" y="524" fill="#a2b2c6">free_tier</text>
+    <text x="820" y="524" fill="#ff7070">ended</text>
+    <text x="900" y="524" fill="#8595aa">retained</text>
   </g>
-  <text x="500" y="606" text-anchor="middle" font-family="Archivo Narrow, sans-serif" font-size="12" fill="#55606f">Interface illustration · figures read from the live database at render time</text>
+  <text x="725" y="590" text-anchor="middle" font-family="Archivo Narrow, sans-serif" font-size="11" fill="#556373">Figures read from the live database at render time · nothing here is scored or ranked</text>
 </svg>

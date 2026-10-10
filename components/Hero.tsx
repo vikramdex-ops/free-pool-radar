@@ -55,7 +55,7 @@ export function Hero({
           <div className="hero-copy">
             <p className="hero-eyebrow">
               <span className="dot dot-live tick" aria-hidden="true" />
-              Live intelligence for $0 AI inference
+              Every free route, verified live
             </p>
 
             {/* The product's one true claim is about permanence, not about
@@ -70,7 +70,7 @@ export function Hero({
 
             <p className="hero-lede">
               Shared pools, free model endpoints, sponsored credits,
-              promotional credits and keyless routes &mdash; each read from the
+              promotional credits and keyless routes. Each one is read from the
               source that published it, stamped with the moment it was last
               confirmed, and kept long after it closes.
             </p>

@@ -2,7 +2,7 @@
 
 **Every free AI inference route, verified live, with the receipts. Never ranked.**
 
-![Free Pool Radar: live dial and verified routes](docs/hero.png)
+![Free Pool Radar: headline, live figures, and a radar instrument panel](docs/hero.svg)
 
 <!-- STATS:START -->
 
