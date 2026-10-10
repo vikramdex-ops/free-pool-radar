@@ -6,9 +6,9 @@
 
 <!-- STATS:START -->
 
-| 🟢 Free routes | 🏢 Providers | 🤖 Models | 🔎 Sources | 🕐 Cycle | ✅ Last verified |
+| 🟢 Free routes | 🏢 Providers | ↗ Models | 👀 Sources | 🕐 Cycle | ✅ Last verified |
 |---:|---:|---:|---:|---:|---|
-| **156** | **39** | **136** | **12** | every 5h | 2026-10-10 04:07 UTC |
+| **156** | **39** | **136** | **11 / 12** | every 5h | 2026-10-10 04:07 UTC |
 
 <!-- STATS:END -->
 

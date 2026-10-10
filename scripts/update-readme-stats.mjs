@@ -64,9 +64,9 @@ const cycle = stats.verificationCycleHours ?? 5;
 const block = [
   START,
   "",
-  "| 🟢 Free routes | 🏢 Providers | 🤖 Models | 🔎 Sources | 🕐 Cycle | ✅ Last verified |",
+  "| 🟢 Free routes | 🏢 Providers | ↗ Models | 👀 Sources | 🕐 Cycle | ✅ Last verified |",
   "|---:|---:|---:|---:|---:|---|",
-  `| **${stats.freeRoutes}** | **${stats.providers}** | **${stats.models}** | **${sources}** | every ${cycle}h | ${lastVerified} |`,
+  `| **${stats.freeRoutes}** | **${stats.providers}** | **${stats.models}** | **${stats.sources?.ok ?? sources} / ${sources}** | every ${cycle}h | ${lastVerified} |`,
   "",
   END,
 ].join("\n");
@@ -80,4 +80,4 @@ if (next === src) {
 }
 
 writeFileSync(README, next);
-console.log(`README stats updated: ${stats.freeRoutes} routes · ${stats.providers} providers · ${stats.models} models · ${lastVerified}`);
+console.log(`README stats updated: ${stats.freeRoutes} routes · ${stats.providers} providers · ${stats.models} models · ${stats.sources?.ok ?? stats.sources?.total ?? "?"} / ${sources} sources · ${lastVerified}`);
