@@ -1,0 +1,341 @@
+import Link from "next/link";
+import type { ChangeWithProvider, OfferWithProvider } from "@/lib/db";
+import {
+  CHANGE_LABEL,
+  FIELD_LABEL,
+  OFFER_TYPE_LABEL,
+  ago,
+  stampUTC,
+} from "@/lib/format";
+import { EmptyState, EvidenceLink } from "./ui";
+
+/**
+ * What is new and what changed (§22, §23) - Enhanced with scroll animations.
+ */
+
+interface Group {
+  key: string;
+  provider: ChangeWithProvider["provider"];
+  changeType: string;
+  rows: ChangeWithProvider[];
+  first: ChangeWithProvider;
+}
+
+function groupChanges(
+  changes: ChangeWithProvider[],
+  windowMs = 6 * 3600_000,
+): Group[] {
+  const groups: Group[] = [];
+  for (const c of changes) {
+    const last = groups[groups.length - 1];
+    const sameSubject =
+      last !== undefined &&
+      last.changeType === c.change_type &&
+      last.provider?.slug === c.provider?.slug &&
+      Math.abs(
+        new Date(last.first.detected_at).getTime() -
+          new Date(c.detected_at).getTime(),
+      ) < windowMs;
+
+    if (sameSubject && last) {
+      last.rows.push(c);
+    } else {
+      groups.push({
+        key: `${c.provider?.slug ?? "?"}-${c.change_type}-${c.id}`,
+        provider: c.provider,
+        changeType: c.change_type,
+        rows: [c],
+        first: c,
+      });
+    }
+  }
+  return groups;
+}
+
+const NAME_LIMIT = 4;
+
+export function ChangeFeed({
+  changes,
+  now,
+  title,
+  id,
+  kinds,
+  emptyTitle,
+  emptyBody,
+  limit,
+}: {
+  changes: ChangeWithProvider[];
+  now: number;
+  title: string;
+  id?: string;
+  kinds?: string[];
+  emptyTitle: string;
+  emptyBody: string;
+  limit?: number;
+}) {
+  const rows = kinds
+    ? changes.filter((c) => kinds.includes(c.change_type))
+    : changes;
+
+  const allGroups = groupChanges(rows);
+  const groups = limit ? allGroups.slice(0, limit) : allGroups;
+  const hidden = allGroups.length - groups.length;
+
+  return (
+    <section id={id} className="sect fade-in-section">
+      <div className="sect-head">
+        <h2 className="sect-title">{title}</h2>
+        <Link href="/timeline" className="link-ev">
+          Full timeline
+          <span aria-hidden="true"> →</span>
+        </Link>
+      </div>
+
+      {groups.length === 0 ? (
+        <EmptyState title={emptyTitle}>{emptyBody}</EmptyState>
+      ) : (
+        <>
+          <ol className="feed">
+            {groups.map((g, idx) => (
+              <li key={g.key} className="feed-item stagger-item" style={{ transitionDelay: `${idx * 0.1}s` }}>
+                <GroupRow group={g} now={now} />
+              </li>
+            ))}
+          </ol>
+          {hidden > 0 ? (
+            <p className="annot" style={{ marginTop: "0.75rem" }}>
+              Showing {groups.length} of {allGroups.length} subjects with
+              recorded changes in the last 6 hours. {hidden} more are on the
+              full timeline.
+            </p>
+          ) : null}
+        </>
+      )}
+    </section>
+  );
+}
+
+function GroupRow({ group, now }: { group: Group; now: number }) {
+  const { provider, changeType, rows, first } = group;
+  const label = CHANGE_LABEL[changeType as keyof typeof CHANGE_LABEL] ?? changeType;
+  
+  const named = rows.slice(0, NAME_LIMIT);
+  const overflow = rows.length - NAME_LIMIT;
+
+  return (
+    <article className="panel panel-enhanced">
+      <div className="change-head">
+        <h3 className="change-provider">
+          <Link href={`/providers/${provider?.slug ?? "unknown"}`}>
+            {provider?.name ?? "Unknown"}
+          </Link>
+        </h3>
+        <span className="badge badge-upcoming">{label}</span>
+      </div>
+
+      <p className="change-ago">{ago(first.detected_at, now)}</p>
+
+      <ul className="change-list">
+        {named.map((c) => {
+          const fieldLabel = c.field
+            ? FIELD_LABEL[c.field as keyof typeof FIELD_LABEL] ?? c.field
+            : null;
+          const isNew = c.change_type === "new";
+          
+          return (
+            <li key={c.id} className="change-row">
+              {fieldLabel && !isNew ? (
+                <span className="label">{fieldLabel}</span>
+              ) : null}
+              {isNew ? (
+                <span className="change-new">
+                  <span className="mono">{c.new_value}</span>
+                </span>
+              ) : (
+                <span className="change-diff">
+                  {c.old_value && c.old_value !== "not_stated" ? (
+                    <span className="mono faded">{c.old_value}</span>
+                  ) : null}
+                  {c.old_value && c.old_value !== "not_stated" ? (
+                    <span aria-hidden="true"> → </span>
+                  ) : null}
+                  <span className="mono">{c.new_value}</span>
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+
+      {overflow > 0 ? (
+        <p className="annot">+ {overflow} more</p>
+      ) : null}
+
+      <div className="change-foot">
+        <EvidenceLink offerId={first.offer_id ?? undefined} />
+      </div>
+    </article>
+  );
+}
+
+export function IntelliFeed({
+  offers,
+  changes,
+  now,
+}: {
+  offers: OfferWithProvider[];
+  changes: ChangeWithProvider[];
+  now: number;
+}) {
+  const live = offers.filter((o) => o.status === "live").slice(0, 8);
+  const recent = groupChanges(changes).slice(0, 8);
+
+  return (
+    <section className="sect fade-in-section">
+      <div className="sect-head">
+        <h2 className="sect-title">Recent Activity</h2>
+      </div>
+
+      <div className="intelli-grid">
+        {live.length > 0 && (
+          <div className="stagger-item">
+            <h3 className="label">Live Now</h3>
+            <ul className="intelli-list">
+              {live.slice(0, 4).map((o) => (
+                <li key={o.id} className="panel panel-enhanced">
+                  <span className="label">{o.provider?.name}</span>
+                  <span className="mono">{o.model_label}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {recent.length > 0 && (
+          <div className="stagger-item" style={{ transitionDelay: "0.1s" }}>
+            <h3 className="label">Recently Changed</h3>
+            <ul className="intelli-list">
+              {recent.slice(0, 4).map((g) => (
+                <li key={g.key} className="panel panel-enhanced">
+                  <span className="label">{g.provider?.name}</span>
+                  <span className="annot">{ago(g.first.detected_at, now)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+export function EndedArchive({
+  offers,
+}: {
+  offers: OfferWithProvider[];
+}) {
+  const ended = offers.filter(o => o.status === "ended" || o.status === "exhausted").slice(0, limit);
+
+  return (
+    <section className="sect fade-in-section">
+      <div className="sect-head">
+        <h2 className="sect-title">Recently Ended</h2>
+        <Link href="/timeline?filter=ended" className="link-ev">
+          View archive
+          <span aria-hidden="true"> →</span>
+        </Link>
+      </div>
+
+      {ended.length === 0 ? (
+        <EmptyState title="No ended offers">
+          Nothing has been withdrawn or exhausted in the recent history.
+        </EmptyState>
+      ) : (
+        <ol className="feed">
+          {ended.map((o, idx) => (
+            <li key={o.id} className="feed-item stagger-item" style={{ transitionDelay: `${idx * 0.1}s` }}>
+              <article className="panel panel-enhanced">
+                <div className="ended-head">
+                  <span className="label">{o.provider?.name}</span>
+                  <span className="badge" style={{ 
+                    background: "rgba(255, 112, 112, 0.1)",
+                    borderColor: "var(--t-ended)",
+                    color: "var(--t-ended)"
+                  }}>
+                    ENDED
+                  </span>
+                </div>
+                <h3 className="mono">{o.model_label}</h3>
+                {o.ended_at ? (
+                  <p className="annot">Ended {stampUTC(o.ended_at)}</p>
+                ) : null}
+              </article>
+            </li>
+          ))}
+        </ol>
+      )}
+    </section>
+  );
+}
+
+export function SourceHealthPanel({
+  sourcesOk,
+  sourcesTotal,
+  lastSweep,
+  nextSweep,
+  unhealthy,
+}: {
+  sourcesOk: number;
+  sourcesTotal: number;
+  lastSweep: string | null;
+  nextSweep: string | null;
+  unhealthy: number;
+}) {
+  const health = sourcesTotal > 0 ? (sourcesOk / sourcesTotal) * 100 : 0;
+
+  return (
+    <div className="panel panel-enhanced stat-card-3d fade-in-section" style={{ marginBottom: "2rem" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+        <h3 className="label">System Status</h3>
+        <span className={`badge ${health >= 90 ? "badge-live" : "badge-upcoming"}`}>
+          {health >= 90 ? "Operational" : "Degraded"}
+        </span>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "1.5rem" }}>
+        <div>
+          <p className="label">Sources Online</p>
+          <p className="mono" style={{ fontSize: "1.75rem", fontWeight: 600, color: "var(--t-live)" }}>
+            {sourcesOk} / {sourcesTotal}
+          </p>
+        </div>
+
+        {lastSweep ? (
+          <div>
+            <p className="label">Last Sweep</p>
+            <p className="mono" style={{ fontSize: "0.875rem" }}>
+              {stampUTC(lastSweep)}
+            </p>
+          </div>
+        ) : null}
+
+        {nextSweep ? (
+          <div>
+            <p className="label">Next Sweep</p>
+            <p className="mono" style={{ fontSize: "0.875rem" }}>
+              {stampUTC(nextSweep)}
+            </p>
+          </div>
+        ) : null}
+      </div>
+
+      {unhealthy > 0 ? (
+        <p className="annot" style={{ marginTop: "1rem", color: "var(--t-upcoming)" }}>
+          ⚠ {unhealthy} {unhealthy === 1 ? "source" : "sources"} not responding
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+
