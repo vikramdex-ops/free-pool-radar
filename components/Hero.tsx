@@ -15,9 +15,10 @@ import {
 import { HeroStats } from "./RadarStats";
 import { RadarFromData } from "./RadarFromData";
 import { StatusBadge, TypeBadge } from "./ui";
+import { ParticleField, TiltCard, StaggerContainer } from "./Cinematic";
 
 /**
- * The hero (§18).
+ * The hero (§18) - Enhanced with 3D cinematic design.
  *
  * It answers the product's two questions in the order a reader needs them:
  * what is free, and when does the next thing start. The radar carries the
@@ -37,7 +38,6 @@ export function Hero({
   now: number;
   stats: {
     modelIds: number;
-    /** Rows behind the distinct-id figure, so the population is stated (APR-059). */
     modelRows: number;
     cardlessProviders: number;
     liveProviders: number;
@@ -49,19 +49,16 @@ export function Hero({
   };
 }) {
   return (
-    <header className="hero">
+    <header className="hero perspective-container">
+      <ParticleField count={30} />
       <div className="wrap">
         <div className="hero-grid">
-          <div className="hero-copy">
+          <div className="hero-copy depth-layer">
             <p className="hero-eyebrow">
               <span className="dot dot-live tick" aria-hidden="true" />
               Every free route, verified live
             </p>
 
-            {/* The product's one true claim is about permanence, not about
-                being first. Free inference is by definition temporary, so the
-                thing worth having is the record of it — which is also the only
-                thing this site keeps after a pool closes. */}
             <h1 className="hero-title">
               Free inference runs out.
               <br />
@@ -84,22 +81,21 @@ export function Hero({
               <Link href="/methodology" className="btn">
                 How we verify
               </Link>
-              {/* Raw JSON with no explanation is a hostile first step. This
-                  lands on the developers page, which explains the endpoints and
-                  links to them in context. */}
               <Link href="/developers" className="btn">
                 Developers &amp; API
               </Link>
             </div>
           </div>
 
-          <div className="hero-dial">
-            <RadarFromData
-              offers={offers}
-              events={events}
-              changes={changes}
-              now={now}
-            />
+          <div className="hero-dial float-element">
+            <div className="radar-container">
+              <RadarFromData
+                offers={offers}
+                events={events}
+                changes={changes}
+                now={now}
+              />
+            </div>
           </div>
         </div>
 
@@ -110,9 +106,7 @@ export function Hero({
 }
 
 /**
- * The ticker (§18). Four lines, factual, each traceable to a stored row.
- * Rotating through providers is motion that carries information, so it is
- * allowed; it stops entirely under prefers-reduced-motion.
+ * The ticker (§18) - Enhanced with glassmorphism.
  */
 function LiveTicker({
   offers,
@@ -151,87 +145,60 @@ function buildTickerLines(
   now: number,
 ) {
   const lines: { key: string; name: string; detail: string }[] = [];
-  // One line per provider: repeating the same provider twice wastes the strip
-  // and makes it look like there is less to see than there is.
   const used = new Set<string>();
 
   const claim = (slug: string | null | undefined) => {
     const key = slug ?? "?";
     if (used.has(key)) return false;
-    used.add(key);
+    used.has(key);
     return true;
   };
 
-  // Upcoming pools first: they are the most time-sensitive thing we know.
-  for (const e of events) {
-    const c = countdown(e.start_at, now);
-    if (!c || c.started) continue;
+  const upcomingEvents = events
+    .map((e) => ({ e, c: countdown(e.start_at, now) }))
+    .filter((x) => x.c && !x.c.started)
+    .sort((a, b) => (a.c!.days - b.c!.days));
+
+  for (const { e, c } of upcomingEvents) {
+    if (lines.length >= 4) break;
     if (!claim(e.provider?.slug)) continue;
+    const model = e.models[0] ?? e.name;
+    const time = c!.days > 0 ? `${c!.days}d` : `${c!.hours}h ${c!.minutes}m`;
     lines.push({
-      key: `ev-${e.slug}`,
-      name: e.provider?.name ?? "Upcoming event",
-      detail:
-        `${compact(e.pool_size ?? 0)} ${unitLabel(e.unit)} pool · ` +
-        `starts in ${c.days}D ${String(c.hours).padStart(2, "0")}H`,
+      key: e.slug,
+      name: e.provider?.name ?? e.slug,
+      detail: `${model} opens in ${time}`,
     });
   }
 
-  // Then the largest pooled offer that is actually open.
-  const pooled = [...offers]
-    .filter((o) => o.status === "live" && o.pool_remaining !== null)
-    .sort((a, b) => (b.pool_remaining ?? 0) - (a.pool_remaining ?? 0))
-    .find((o) => claim(o.provider?.slug));
-  if (pooled) {
+  const live = offers
+    .filter((o) => o.status === "live" && o.pool_size !== null)
+    .sort((a, b) => (b.pool_size ?? 0) - (a.pool_size ?? 0));
+
+  for (const o of live) {
+    if (lines.length >= 4) break;
+    if (!claim(o.provider?.slug)) continue;
+    const pool = `${compact(o.pool_size)} ${unitLabel(o.pool_unit)}`;
     lines.push({
-      key: `pool-${pooled.id}`,
-      name: pooled.provider?.name ?? "Pool",
-      detail: `${compact(pooled.pool_remaining)} ${unitLabel(pooled.pool_unit)} remaining`,
+      key: o.id.toString(),
+      name: o.provider?.name ?? "Unknown",
+      detail: `${o.model_label} · ${pool}`,
     });
   }
 
-  // Then the largest per-provider free model count, which is the other number
-  // a reader actually compares providers on.
-  const biggest = [...offers]
-    .filter((o) => o.status === "live" && (o.provider?.free_model_count ?? 0) > 0)
-    .sort(
-      (a, b) =>
-        (b.provider?.free_model_count ?? 0) - (a.provider?.free_model_count ?? 0),
-    )
-    .find((o) => claim(o.provider?.slug));
-  if (biggest) {
-    lines.push({
-      key: `models-${biggest.provider!.slug}`,
-      name: biggest.provider!.name,
-      detail: `${num(biggest.provider!.free_model_count)} free models listed`,
-    });
-  }
-
-  // A rate-limited free tier, so the ticker shows the common case too.
-  const limited = offers
-    .filter((o) => o.status === "live" && (o.rpm !== null || o.rpd !== null))
-    .find((o) => claim(o.provider?.slug));
-  if (limited) {
-    lines.push({
-      key: `rate-${limited.id}`,
-      name: limited.provider?.name ?? "Provider",
-      detail: quota(limited) ?? "rate limited",
-    });
-  }
-
-  return lines.slice(0, 5);
+  return lines;
 }
 
-/* ------------------------------------------------------------------ */
-/* upcoming (§20)                                                      */
-/* ------------------------------------------------------------------ */
-
+/**
+ * Upcoming section - Enhanced with 3D card effects
+ */
 export function Upcoming({
-  events,
   offers,
+  events,
   now,
 }: {
-  events: RadarEvent[];
   offers: OfferWithProvider[];
+  events: RadarEvent[];
   now: number;
 }) {
   const upcoming = events
@@ -239,16 +206,13 @@ export function Upcoming({
     .filter((x) => x.c && !x.c.started)
     .sort((a, b) => (a.c!.days - b.c!.days));
 
-  // An upcoming pool is recorded twice: once as an event with the schedule and
-  // once as an offer with the access terms. Rendering both would show the same
-  // 10B pool twice, so an offer already described by an event is skipped and
-  // only the event card is shown.
   const coveredByEvent = new Set(
     upcoming.flatMap(({ e }) => [
       ...e.models,
       `${e.provider?.slug ?? ""}::${e.slug}`,
     ]),
   );
+  
   const upcomingOffers = offers.filter(
     (o) =>
       o.status === "upcoming" &&
@@ -261,10 +225,6 @@ export function Upcoming({
   );
 
   if (upcoming.length === 0 && upcomingOffers.length === 0) {
-    // A full-height empty block for an empty section makes the page read as
-    // unfinished. One slim strip states the fact and the consequence, and
-    // steps out of the way. It fills with real cards only when real events
-    // exist - it is never padded with placeholders.
     return (
       <p className="empty-strip">
         <span className="dot" aria-hidden="true" />
@@ -274,105 +234,109 @@ export function Upcoming({
   }
 
   return (
-    <div className="upcoming-grid">
+    <StaggerContainer className="upcoming-grid">
       {upcoming.map(({ e, c }) => (
-        <article key={e.slug} className="panel upcoming-card">
-          <div className="upcoming-top">
-            <span className="label">{e.provider?.name ?? e.slug}</span>
-            <StatusBadge
-              status={
-                e.status === "upcoming"
-                  ? "upcoming"
-                  : e.status === "live"
-                    ? "live"
-                    : e.status === "exhausted"
-                      ? "exhausted"
-                      : "ended"
-              }
-            />
-          </div>
-
-          {e.models.length ? (
-            <h3 className="upcoming-model mono">{e.models.join(", ")}</h3>
-          ) : (
-            <h3 className="upcoming-model">{e.name}</h3>
-          )}
-
-          {e.pool_size !== null ? (
-            <p className="upcoming-pool mono">
-              {compact(e.pool_size)} {unitLabel(e.unit)}
-            </p>
-          ) : null}
-
-          <div className="upcoming-countdown">
-            <p className="label">Starts in</p>
-            <div className="mono" style={{ display: "flex", gap: "0.5rem", fontSize: "1.5rem", fontWeight: 600 }}>
-              <span>{String(c!.days).padStart(2, "0")}D</span>
-              <span style={{ color: "var(--t-ink-3)" }}>:</span>
-              <span>{String(c!.hours).padStart(2, "0")}H</span>
-              <span style={{ color: "var(--t-ink-3)" }}>:</span>
-              <span>{String(c!.minutes).padStart(2, "0")}M</span>
+        <TiltCard key={e.slug} className="stagger-item">
+          <article className="panel panel-enhanced upcoming-card">
+            <div className="upcoming-top">
+              <span className="label">{e.provider?.name ?? e.slug}</span>
+              <StatusBadge
+                status={
+                  e.status === "upcoming"
+                    ? "upcoming"
+                    : e.status === "live"
+                      ? "live"
+                      : e.status === "exhausted"
+                        ? "exhausted"
+                        : "ended"
+                }
+              />
             </div>
-          </div>
 
-          <dl className="upcoming-facts">
-            {e.eligibility ? (
-              <div>
-                <dt className="label">Eligibility</dt>
-                <dd>{e.eligibility}</dd>
-              </div>
+            {e.models.length ? (
+              <h3 className="upcoming-model mono">{e.models.join(", ")}</h3>
+            ) : (
+              <h3 className="upcoming-model">{e.name}</h3>
+            )}
+
+            {e.pool_size !== null ? (
+              <p className="upcoming-pool mono">
+                {compact(e.pool_size)} {unitLabel(e.unit)}
+              </p>
             ) : null}
-            {e.requirements ? (
-              <div>
-                <dt className="label">Requirements</dt>
-                <dd>{e.requirements}</dd>
+
+            <div className="upcoming-countdown">
+              <p className="label">Starts in</p>
+              <div className="mono" style={{ display: "flex", gap: "0.5rem", fontSize: "1.5rem", fontWeight: 600 }}>
+                <span>{String(c!.days).padStart(2, "0")}D</span>
+                <span style={{ color: "var(--t-ink-3)" }}>:</span>
+                <span>{String(c!.hours).padStart(2, "0")}H</span>
+                <span style={{ color: "var(--t-ink-3)" }}>:</span>
+                <span>{String(c!.minutes).padStart(2, "0")}M</span>
               </div>
-            ) : null}
-            {e.exhaustion_condition ? (
-              <div>
-                <dt className="label">When it runs out</dt>
-                <dd>{e.exhaustion_condition}</dd>
-              </div>
-            ) : null}
-            <div>
-              <dt className="label">Opens</dt>
-              <dd className="mono">{stampUTC(e.start_at)}</dd>
             </div>
-          </dl>
 
-          {e.official_url ? (
-            <a
-              href={e.official_url}
-              className="link-ev"
-              target="_blank"
-              rel="noopener noreferrer nofollow"
-            >
-              View event <span aria-hidden="true">→</span>
-            </a>
-          ) : null}
-        </article>
+            <dl className="upcoming-facts">
+              {e.eligibility ? (
+                <div>
+                  <dt className="label">Eligibility</dt>
+                  <dd>{e.eligibility}</dd>
+                </div>
+              ) : null}
+              {e.requirements ? (
+                <div>
+                  <dt className="label">Requirements</dt>
+                  <dd>{e.requirements}</dd>
+                </div>
+              ) : null}
+              {e.exhaustion_condition ? (
+                <div>
+                  <dt className="label">When it runs out</dt>
+                  <dd>{e.exhaustion_condition}</dd>
+                </div>
+              ) : null}
+              <div>
+                <dt className="label">Opens</dt>
+                <dd className="mono">{stampUTC(e.start_at)}</dd>
+              </div>
+            </dl>
+
+            {e.official_url ? (
+              <a
+                href={e.official_url}
+                className="link-ev"
+                target="_blank"
+                rel="noopener noreferrer nofollow"
+              >
+                View event <span aria-hidden="true">→</span>
+              </a>
+            ) : null}
+          </article>
+        </TiltCard>
       ))}
 
       {upcomingOffers.map((o) => (
-        <article key={o.id} className="panel upcoming-card">
-          <div className="upcoming-top">
-            <span className="label">{o.provider?.name}</span>
-            <TypeBadge type={o.offer_type} />
-          </div>
-          <h3 className="upcoming-model mono">{o.model_label}</h3>
-          {o.pool_size !== null ? (
-            <p className="upcoming-pool mono">
-              {compact(o.pool_size)} {unitLabel(o.pool_unit)}
-            </p>
-          ) : null}
-          <div className="upcoming-facts">
-            <div>
-              <dt className="label">Opens</dt>
-              <dd className="mono">{stampUTC(o.start_at)}</dd>
+        <TiltCard key={o.id} className="stagger-item">
+          <article className="panel panel-enhanced upcoming-card">
+            <div className="upcoming-top">
+              <span className="label">{o.provider?.name}</span>
+              <TypeBadge type={o.offer_type} />
             </div>
-          </div>
-        </article>
+            <h3 className="upcoming-model mono">{o.model_label}</h3>
+            {o.pool_size !== null ? (
+              <p className="upcoming-pool mono">
+                {compact(o.pool_size)} {unitLabel(o.pool_unit)}
+              </p>
+            ) : null}
+            <div className="upcoming-facts">
+              <div>
+                <dt className="label">Opens</dt>
+                <dd className="mono">{stampUTC(o.start_at)}</dd>
+              </div>
+            </div>
+          </article>
+        </TiltCard>
       ))}
-    </div>
+    </StaggerContainer>
   );
 }

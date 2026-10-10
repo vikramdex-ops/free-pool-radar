@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import "./cinematic.css";
 import { themeInitScript } from "@/lib/theme";
 import { SITE_URL } from "@/lib/site";
 import { JsonLd, websiteSchema } from "@/components/JsonLd";
