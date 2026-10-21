@@ -61,12 +61,17 @@ export function OfferLedger({
   const shown = limit ? offers.slice(0, limit) : offers;
   const hidden = offers.length - shown.length;
 
+  // APR-005: the cards are the narrow form of this ledger (the table hides
+  // below 900px), so they render the full shown set with no separate cap. A
+  // hard 6 here once meant a narrow reader saw 6 cards under counts claiming
+  // every route. Rendered and counted are the same array, so they cannot
+  // disagree.
+  const cards = shown.map((o) => <OfferCard key={o.id} offer={o} now={now} />);
+
   return (
     <div className="ledger">
       <div className="ledger-cards">
-        {shown.slice(0, 6).map((o) => (
-          <OfferCard key={o.id} offer={o} now={now} />
-        ))}
+        {cards}
       </div>
 
       <div className="tbl-wrap ledger-table">

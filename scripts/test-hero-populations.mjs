@@ -27,6 +27,15 @@ const page = readFileSync(new URL("../app/page.tsx", import.meta.url), "utf8").r
   /\r\n/g,
   "\n",
 );
+const ledger = stripComments(
+  readFileSync(new URL("../components/Ledger.tsx", import.meta.url), "utf8").replace(/\r\n/g, "\n"),
+);
+const liveBrowser = stripComments(
+  readFileSync(new URL("../components/LiveBrowser.tsx", import.meta.url), "utf8").replace(
+    /\r\n/g,
+    "\n",
+  ),
+);
 // Comments are stripped before asserting on literals: a date inside a comment
 // explaining why a date is required is not a hard-coded date.
 const stats = stripComments(statsRaw);
@@ -216,6 +225,34 @@ check(
   "the withdrawn figure states its denominator",
   () => assert.match(stats, /kept on the record of/),
 );
+
+// 8. #46a (APR-005): the narrow cards render the full shown set. A hard cap
+//    here once painted 6 cards under counts claiming every route, with the
+//    caption hidden below 900px.
+check("ledger cards render the shown set with no separate cap", () => {
+  assert.equal(
+    /shown\.slice\(0,\s*\d+\)\.map/.test(ledger),
+    false,
+    "a hard slice still caps the card render",
+  );
+  assert.match(ledger, /const cards = shown\.map/, "no single rendered array exists");
+});
+
+// 9. #46a (APR-020): where filters withhold rows the page carries a control
+//    reaching the full set, stating the population it reaches — and only
+//    while rows are actually withheld.
+check("the filter control reaches the full set only when rows are withheld", () => {
+  assert.match(
+    liveBrowser,
+    /Show all \{offers\.length\}/,
+    "no control states the full set it reaches",
+  );
+  assert.match(
+    liveBrowser,
+    /sorted\.length < offers\.length/,
+    "the control is not gated on rows actually withheld",
+  );
+});
 
 if (failures > 0) {
   console.error(`\n${failures} check(s) failed`);
