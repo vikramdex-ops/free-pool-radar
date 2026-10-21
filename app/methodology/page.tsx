@@ -105,6 +105,30 @@ export default function MethodologyPage() {
             been able to check&rdquo;.
           </p>
 
+          <h2>Only a positive report ends an offer</h2>
+          <p>
+            This is the limitation we publish rather than hide. The system
+            never ends an offer because a source went silent. No silence, no
+            threshold, and no timeout ever marks anything ended. The only
+            thing that ends an offer is a source positively reporting that it
+            ended: a provider announcement, a changelog entry, a documentation
+            change, or a live endpoint that reports the tier as removed.
+            Absence of evidence is never treated as evidence of absence.
+          </p>
+          <p>
+            That is why a tier a provider quietly drops does not disappear
+            from this site. Its verification time ages, and it moves through
+            fresh, aging, stale and very stale as it does. Very stale is the
+            honest signal: it tells a reader something may be wrong without
+            the product inventing an ending it never observed.
+          </p>
+          <p>
+            Every ending carries its evidence. An offer marked ending,
+            exhausted, ended or suspended names the source that reported it,
+            because an ending type is a reading from a source, never an
+            inference from silence.
+          </p>
+
           <h2>Conflicts are preserved</h2>
           <p>
             When two official sources disagree, we store both readings and
