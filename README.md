@@ -8,7 +8,7 @@
 
 | 🟢 Free routes | 🏢 Providers | ↗ Models | 👀 Sources | 🕐 Cycle | ✅ Last verified |
 |---:|---:|---:|---:|---:|---|
-| **156** | **39** | **136** | **11 / 12** | every 5h | 2026-10-10 04:07 UTC |
+| **269** | **39** | **249** | **10 / 12** | every 5h | 2026-11-07 17:07 UTC |
 
 <!-- STATS:END -->
 
